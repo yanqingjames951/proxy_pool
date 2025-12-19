@@ -51,12 +51,15 @@ PROXY_FETCHER = [
     "freeProxy08",  # 小幻代理
     "freeProxy10",  # 89代理
     "freeProxy12",  # ProxyScrape
-    "freeProxy13",  # Spys.one
-    "freeProxy14",  # UU-Proxy
     "freeProxy15",  # Proxy-List.download
-    "freeProxy16",  # ProxyNova
     "freeProxy17",  # FreeProxy.world
     "freeProxy18",  # Free-Proxy-List
+    # 新增可靠代理源
+    "freeProxy19",  # GeoNode API
+    "freeProxy20",  # TheSpeedX (GitHub)
+    "freeProxy21",  # clarketm (GitHub)
+    "freeProxy22",  # jetkai (GitHub)
+    "freeProxy23",  # monosans (GitHub)
 ]
 
 # ############# proxy validator #################
@@ -91,3 +94,52 @@ PROXY_REGION = True
 # Otherwise it will detect the timezone from the system automatically.
 
 TIMEZONE = "Asia/Shanghai"
+
+# ############# authentication config #################
+# 是否启用 API Key 认证
+AUTH_ENABLED = True
+
+# ############# rate limiting config #################
+# 是否启用请求限流
+RATE_LIMIT_ENABLED = True
+
+# 每分钟最大请求数 (0 表示不限制)
+RATE_LIMIT_PER_MINUTE = 60
+
+# 每日最大请求数 (0 表示不限制)
+RATE_LIMIT_PER_DAY = 1000
+
+# ############# usage logging config #################
+# 是否启用使用日志
+USAGE_LOG_ENABLED = True
+
+# 日志保留天数
+USAGE_LOG_RETENTION_DAYS = 7
+
+# 最大日志条数
+USAGE_LOG_MAX_ENTRIES = 10000
+
+# ############# alert config #################
+# 是否启用告警通知
+ALERT_ENABLED = True
+
+# 告警 Webhook URL (支持钉钉、企业微信、Slack、Telegram 或通用 JSON webhook)
+# 钉钉机器人: https://oapi.dingtalk.com/robot/send?access_token=xxx
+# 企业微信: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx
+# Slack: https://hooks.slack.com/services/xxx
+# Telegram: https://api.telegram.org/bot<TOKEN>/sendMessage?chat_id=<CHAT_ID>
+ALERT_WEBHOOK = ""
+
+# 告警冷却时间（秒），同一类型告警在此时间内不重复发送
+ALERT_COOLDOWN = 300
+
+# ############# scheduler config #################
+# 动态调度：当代理池低于此值时加快抓取频率
+DYNAMIC_FETCH_THRESHOLD = 500
+
+# 正常抓取间隔（秒）
+FETCH_INTERVAL_NORMAL = 300
+
+# 紧急抓取间隔（秒）- 代理池数量低时使用
+FETCH_INTERVAL_URGENT = 60
+

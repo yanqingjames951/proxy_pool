@@ -39,12 +39,13 @@ class DoValidator(object):
         Returns:
             Proxy Object
         """
-        http_r = cls.httpValidator(proxy)
+        http_r, latency = cls.httpValidatorWithLatency(proxy)
         https_r = False if not http_r else cls.httpsValidator(proxy)
 
         proxy.check_count += 1
         proxy.last_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         proxy.last_status = True if http_r else False
+        proxy.latency = latency if http_r else 0
         if http_r:
             if proxy.fail_count > 0:
                 proxy.fail_count -= 1
@@ -54,6 +55,27 @@ class DoValidator(object):
         else:
             proxy.fail_count += 1
         return proxy
+
+    @classmethod
+    def httpValidatorWithLatency(cls, proxy):
+        """HTTP验证并返回延迟时间"""
+        import time
+        from requests import head
+        from handler.configHandler import ConfigHandler
+        
+        conf = ConfigHandler()
+        HEADER = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:34.0) Gecko/20100101 Firefox/34.0'}
+        proxies = {"http": "http://{proxy}".format(proxy=proxy.proxy), "https": "https://{proxy}".format(proxy=proxy.proxy)}
+        
+        try:
+            start_time = time.time()
+            r = head(conf.httpUrl, headers=HEADER, proxies=proxies, timeout=conf.verifyTimeout)
+            latency = int((time.time() - start_time) * 1000)  # 毫秒
+            if r.status_code == 200:
+                return True, latency
+            return False, 0
+        except:
+            return False, 0
 
     @classmethod
     def httpValidator(cls, proxy):
@@ -78,12 +100,40 @@ class DoValidator(object):
 
     @classmethod
     def regionGetter(cls, proxy):
+        """
+        获取代理IP的地理位置信息
+        使用多个API作为备选，提高成功率
+        """
+        ip = proxy.proxy.split(':')[0]
+        
+        # 尝试 ip-api.com (免费，每分钟45次请求限制)
         try:
-            url = 'https://searchplugin.csdn.net/api/v1/ip/get?ip=%s' % proxy.proxy.split(':')[0]
-            r = WebRequest().get(url=url, retry_time=1, timeout=2).json
-            return r['data']['address']
+            url = f'http://ip-api.com/json/{ip}?lang=zh-CN'
+            r = WebRequest().get(url=url, retry_time=1, timeout=5).json
+            if r.get('status') == 'success':
+                country = r.get('country', '')
+                city = r.get('city', '')
+                if country and city:
+                    return f"{country} {city}"
+                elif country:
+                    return country
         except:
-            return 'error'
+            pass
+        
+        # 备选：尝试 ip.useragentinfo.com
+        try:
+            url = f'https://ip.useragentinfo.com/json?ip={ip}'
+            r = WebRequest().get(url=url, retry_time=1, timeout=3).json
+            country = r.get('country', '')
+            province = r.get('province', '')
+            city = r.get('city', '')
+            if country:
+                parts = [p for p in [country, province, city] if p]
+                return ' '.join(parts[:2])
+        except:
+            pass
+        
+        return ''
 
 
 class _ThreadChecker(Thread):

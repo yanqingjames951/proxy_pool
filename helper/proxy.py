@@ -18,7 +18,7 @@ import json
 class Proxy(object):
 
     def __init__(self, proxy, fail_count=0, region="", anonymous="",
-                 source="", check_count=0, last_status="", last_time="", https=False):
+                 source="", check_count=0, last_status="", last_time="", https=False, latency=0):
         self._proxy = proxy
         self._fail_count = fail_count
         self._region = region
@@ -28,6 +28,7 @@ class Proxy(object):
         self._last_status = last_status
         self._last_time = last_time
         self._https = https
+        self._latency = latency
 
     @classmethod
     def createFromJson(cls, proxy_json):
@@ -40,7 +41,8 @@ class Proxy(object):
                    check_count=_dict.get("check_count", 0),
                    last_status=_dict.get("last_status", ""),
                    last_time=_dict.get("last_time", ""),
-                   https=_dict.get("https", False)
+                   https=_dict.get("https", False),
+                   latency=_dict.get("latency", 0)
                    )
 
     @property
@@ -89,6 +91,53 @@ class Proxy(object):
         return self._https
 
     @property
+    def latency(self):
+        """ 最后一次检测延迟(毫秒) """
+        return self._latency
+
+    @property
+    def score(self):
+        """
+        代理质量评分 (0-100)
+        计算方式:
+        - 基础分: 50分
+        - 成功率加分: (check_count - fail_count) / check_count * 30 (最高30分)
+        - 延迟加分: 根据延迟快慢，最高20分
+        - HTTPS 加分: 支持 HTTPS +5分
+        - 失败惩罚: 每次失败 -5分
+        """
+        if self._check_count == 0:
+            return 50  # 新代理默认50分
+        
+        # 成功率 (0-30分)
+        success_count = self._check_count - self._fail_count
+        success_rate = success_count / self._check_count if self._check_count > 0 else 0
+        success_score = success_rate * 30
+        
+        # 延迟分数 (0-20分)
+        if self._latency <= 0:
+            latency_score = 0
+        elif self._latency < 300:
+            latency_score = 20  # 极快
+        elif self._latency < 500:
+            latency_score = 15  # 快
+        elif self._latency < 1000:
+            latency_score = 10  # 中等
+        elif self._latency < 2000:
+            latency_score = 5   # 慢
+        else:
+            latency_score = 0   # 很慢
+        
+        # HTTPS 加分
+        https_score = 5 if self._https else 0
+        
+        # 基础分 + 成功率 + 延迟 + HTTPS
+        total = 45 + success_score + latency_score + https_score
+        
+        # 限制在 0-100 之间
+        return max(0, min(100, int(total)))
+
+    @property
     def to_dict(self):
         """ 属性字典 """
         return {"proxy": self.proxy,
@@ -99,7 +148,9 @@ class Proxy(object):
                 "source": self.source,
                 "check_count": self.check_count,
                 "last_status": self.last_status,
-                "last_time": self.last_time}
+                "last_time": self.last_time,
+                "latency": self.latency,
+                "score": self.score}
 
     @property
     def to_json(self):
@@ -129,6 +180,10 @@ class Proxy(object):
     @region.setter
     def region(self, value):
         self._region = value
+
+    @latency.setter
+    def latency(self, value):
+        self._latency = value
 
     def add_source(self, source_str):
         if source_str:

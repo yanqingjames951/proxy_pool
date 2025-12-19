@@ -46,6 +46,29 @@ class ProxyHandler(object):
             return Proxy.createFromJson(proxy)
         return None
 
+    def getBatch(self, count=10, https=False, region=None):
+        """
+        return multiple proxies at once
+        Args:
+            count: number of proxies to return (max 100)
+            https: True/False
+            region: filter by region (optional)
+        Returns:
+            list of Proxy objects
+        """
+        count = min(count, 100)  # 限制最大数量
+        all_proxies = self.db.getAll(https)
+        proxies = [Proxy.createFromJson(p) for p in all_proxies]
+        
+        # 按地区过滤
+        if region:
+            proxies = [p for p in proxies if region.lower() in (p.region or '').lower()]
+        
+        # 按延迟排序（延迟小的优先）
+        proxies = sorted(proxies, key=lambda x: x.latency if x.latency > 0 else 999999)
+        
+        return proxies[:count]
+
     def put(self, proxy):
         """
         put proxy into use proxy
@@ -60,6 +83,16 @@ class ProxyHandler(object):
         :return:
         """
         return self.db.delete(proxy.proxy)
+
+    def deleteBatch(self, proxies):
+        """
+        delete proxies in batch
+        :param proxies: list of proxy str
+        :return:
+        """
+        for proxy in proxies:
+            self.db.delete(proxy)
+        return True
 
     def getAll(self, https=False):
         """

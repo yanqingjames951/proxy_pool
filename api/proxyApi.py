@@ -12,22 +12,35 @@
                    2019/08/14: 集成Gunicorn启动方式
                    2020/06/23: 新增pop接口
                    2022/07/21: 更新count接口
+                   2024/12/20: 新增仪表盘API接口
+                   2024/12/20: 新增认证、限流、统计功能
 -------------------------------------------------
 """
 __author__ = 'JHao'
 
+import time
 import platform
 from werkzeug.wrappers import Response
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from util.six import iteritems
 from helper.proxy import Proxy
 from handler.proxyHandler import ProxyHandler
 from handler.configHandler import ConfigHandler
+from handler.authHandler import AuthHandler, require_auth, require_admin
+from handler.usageHandler import UsageHandler
+from handler.rateLimitHandler import RateLimitHandler, rate_limit
+
+import setting
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for frontend
 conf = ConfigHandler()
 proxy_handler = ProxyHandler()
+auth_handler = AuthHandler()
+usage_handler = UsageHandler()
+rate_limit_handler = RateLimitHandler()
 
 
 class JsonResponse(Response):
@@ -43,11 +56,17 @@ app.response_class = JsonResponse
 
 api_list = [
     {"url": "/get", "params": "type: ''https'|''", "desc": "get a proxy"},
+    {"url": "/get_batch", "params": "count, type, region", "desc": "get multiple proxies"},
     {"url": "/pop", "params": "", "desc": "get and delete a proxy"},
     {"url": "/delete", "params": "proxy: 'e.g. 127.0.0.1:8080'", "desc": "delete an unable proxy"},
     {"url": "/all", "params": "type: ''https'|''", "desc": "get all proxy from proxy pool"},
-    {"url": "/count", "params": "", "desc": "return proxy count"}
-    # 'refresh': 'refresh proxy pool',
+    {"url": "/count", "params": "", "desc": "return proxy count"},
+    {"url": "/export", "params": "format, type, region, count", "desc": "export proxies as txt/json/csv"},
+    {"url": "/api/proxies", "params": "page, size, https, region, source", "desc": "paginated proxy list"},
+    {"url": "/api/delete_batch", "params": "proxies[]", "desc": "batch delete proxies"},
+    {"url": "/api/test", "params": "proxy, url", "desc": "test a proxy"},
+    {"url": "/api/sources", "params": "", "desc": "get source statistics"},
+    {"url": "/api/config", "params": "", "desc": "get system config"},
 ]
 
 
@@ -57,16 +76,85 @@ def index():
 
 
 @app.route('/get/')
+@rate_limit
 def get():
     https = request.args.get("type", "").lower() == 'https'
     proxy = proxy_handler.get(https)
+    # 记录使用日志
+    user = getattr(request, 'user', {}).get('name', 'anonymous')
+    if proxy:
+        usage_handler.log_usage(user, 'get', proxy.proxy)
     return proxy.to_dict if proxy else {"code": 0, "src": "no proxy"}
 
 
+@app.route('/get_batch/')
+@rate_limit
+def getBatch():
+    """批量获取代理"""
+    count = int(request.args.get("count", 10))
+    https = request.args.get("type", "").lower() == 'https'
+    region = request.args.get("region", "")
+    
+    proxies = proxy_handler.getBatch(count, https, region if region else None)
+    
+    # 记录使用日志
+    user = getattr(request, 'user', {}).get('name', 'anonymous')
+    usage_handler.log_usage(user, 'get_batch', f"count={len(proxies)}")
+    
+    return {
+        "code": 0,
+        "count": len(proxies),
+        "proxies": [p.to_dict for p in proxies]
+    }
+
+
+@app.route('/export/')
+def export():
+    """导出代理列表"""
+    fmt = request.args.get("format", "txt").lower()
+    https = request.args.get("type", "").lower() == 'https'
+    region = request.args.get("region", "")
+    count = int(request.args.get("count", 100))
+    
+    proxies = proxy_handler.getBatch(count, https, region if region else None)
+    
+    # 记录使用日志
+    user = getattr(request, 'user', {}).get('name', 'anonymous')
+    usage_handler.log_usage(user, 'export', f"format={fmt},count={len(proxies)}")
+    
+    if fmt == "json":
+        return jsonify([p.to_dict for p in proxies])
+    
+    elif fmt == "csv":
+        lines = ["proxy,https,region,latency,source"]
+        for p in proxies:
+            lines.append(f"{p.proxy},{p.https},{p.region or ''},{p.latency},{p.source}")
+        response = app.response_class(
+            response="\n".join(lines),
+            mimetype="text/csv",
+            headers={"Content-Disposition": "attachment;filename=proxies.csv"}
+        )
+        return response
+    
+    else:  # txt
+        lines = [p.proxy for p in proxies]
+        response = app.response_class(
+            response="\n".join(lines),
+            mimetype="text/plain",
+            headers={"Content-Disposition": "attachment;filename=proxies.txt"}
+        )
+        return response
+
+
 @app.route('/pop/')
+@rate_limit
 def pop():
     https = request.args.get("type", "").lower() == 'https'
     proxy = proxy_handler.pop(https)
+    # 记录使用日志
+    user = getattr(request, 'user', {}).get('name', 'anonymous')
+    if proxy:
+        usage_handler.log_usage(user, 'pop', proxy.proxy)
     return proxy.to_dict if proxy else {"code": 0, "src": "no proxy"}
 
 
@@ -95,12 +183,429 @@ def getCount():
     proxies = proxy_handler.getAll()
     http_type_dict = {}
     source_dict = {}
+    region_dict = {}
     for proxy in proxies:
         http_type = 'https' if proxy.https else 'http'
         http_type_dict[http_type] = http_type_dict.get(http_type, 0) + 1
         for source in proxy.source.split('/'):
             source_dict[source] = source_dict.get(source, 0) + 1
-    return {"http_type": http_type_dict, "source": source_dict, "count": len(proxies)}
+        if proxy.region:
+            region_dict[proxy.region] = region_dict.get(proxy.region, 0) + 1
+    return {
+        "http_type": http_type_dict,
+        "source": source_dict,
+        "region": region_dict,
+        "count": len(proxies)
+    }
+
+
+# ============ Dashboard API Endpoints ============
+
+@app.route('/api/proxies/')
+def getProxiesPaginated():
+    """Get paginated proxy list with filters and sorting"""
+    page = int(request.args.get('page', 1))
+    size = int(request.args.get('size', 20))
+    https_filter = request.args.get('https', '').lower()
+    region_filter = request.args.get('region', '').lower()
+    source_filter = request.args.get('source', '').lower()
+    sort_by = request.args.get('sort', 'latency')  # latency, fail_count, check_count, last_time
+    sort_order = request.args.get('order', 'asc')  # asc or desc
+    
+    # Get all proxies
+    all_proxies = proxy_handler.getAll()
+    
+    # Apply filters
+    filtered = all_proxies
+    if https_filter == 'true':
+        filtered = [p for p in filtered if p.https]
+    elif https_filter == 'false':
+        filtered = [p for p in filtered if not p.https]
+    
+    if region_filter:
+        filtered = [p for p in filtered if region_filter in p.region.lower()]
+    
+    if source_filter:
+        filtered = [p for p in filtered if source_filter in p.source.lower()]
+    
+    # Sort proxies
+    reverse = sort_order == 'desc'
+    if sort_by == 'latency':
+        # Sort by latency, put 0 (no latency data) at the end
+        filtered.sort(key=lambda p: (p.latency == 0, p.latency), reverse=reverse)
+    elif sort_by == 'fail_count':
+        filtered.sort(key=lambda p: p.fail_count, reverse=reverse)
+    elif sort_by == 'check_count':
+        filtered.sort(key=lambda p: p.check_count, reverse=reverse)
+    elif sort_by == 'last_time':
+        filtered.sort(key=lambda p: p.last_time or '', reverse=reverse)
+    
+    # Pagination
+    total = len(filtered)
+    start = (page - 1) * size
+    end = start + size
+    paginated = filtered[start:end]
+    
+    return {
+        "data": [p.to_dict for p in paginated],
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": (total + size - 1) // size
+    }
+
+
+@app.route('/api/delete_batch/', methods=['POST'])
+def deleteBatch():
+    """Batch delete proxies"""
+    data = request.get_json() or {}
+    proxies = data.get('proxies', [])
+    if not proxies:
+        return {"code": 1, "message": "No proxies specified"}
+    
+    deleted = 0
+    for proxy_str in proxies:
+        try:
+            proxy_handler.delete(Proxy(proxy_str))
+            deleted += 1
+        except:
+            pass
+    
+    return {"code": 0, "message": f"Deleted {deleted} proxies", "deleted": deleted}
+
+
+@app.route('/api/test/', methods=['GET', 'POST'])
+def testProxy():
+    """Test a proxy against a URL"""
+    import requests as req
+    
+    if request.method == 'POST':
+        data = request.get_json() or {}
+        proxy_str = data.get('proxy', '')
+        test_url = data.get('url', 'http://httpbin.org/ip')
+    else:
+        proxy_str = request.args.get('proxy', '')
+        test_url = request.args.get('url', 'http://httpbin.org/ip')
+    
+    if not proxy_str:
+        return {"code": 1, "message": "No proxy specified"}
+    
+    proxies = {
+        "http": f"http://{proxy_str}",
+        "https": f"http://{proxy_str}"
+    }
+    
+    start_time = time.time()
+    try:
+        resp = req.get(test_url, proxies=proxies, timeout=10)
+        latency = round((time.time() - start_time) * 1000)
+        return {
+            "code": 0,
+            "success": True,
+            "status_code": resp.status_code,
+            "latency_ms": latency,
+            "content": resp.text[:500] if resp.text else ""
+        }
+    except Exception as e:
+        latency = round((time.time() - start_time) * 1000)
+        return {
+            "code": 0,
+            "success": False,
+            "error": str(e),
+            "latency_ms": latency
+        }
+
+
+@app.route('/api/sources/')
+def getSources():
+    """Get statistics by source"""
+    proxies = proxy_handler.getAll()
+    source_stats = {}
+    
+    for proxy in proxies:
+        for source in proxy.source.split('/'):
+            if source not in source_stats:
+                source_stats[source] = {
+                    "name": source,
+                    "total": 0,
+                    "https": 0,
+                    "http": 0,
+                    "regions": {}
+                }
+            source_stats[source]["total"] += 1
+            if proxy.https:
+                source_stats[source]["https"] += 1
+            else:
+                source_stats[source]["http"] += 1
+            if proxy.region:
+                regions = source_stats[source]["regions"]
+                regions[proxy.region] = regions.get(proxy.region, 0) + 1
+    
+    return {"sources": list(source_stats.values()), "total_sources": len(source_stats)}
+
+
+@app.route('/api/config/')
+def getConfig():
+    """Get system configuration (read-only)"""
+    return {
+        "server_host": conf.serverHost,
+        "server_port": conf.serverPort,
+        "http_url": conf.httpUrl,
+        "https_url": conf.httpsUrl,
+        "verify_timeout": conf.verifyTimeout,
+        "max_fail_count": conf.maxFailCount,
+        "pool_size_min": conf.poolSizeMin,
+        "proxy_region": conf.proxyRegion,
+        "fetchers": conf.fetchers
+    }
+
+
+# ============ Health & Monitoring Endpoints ============
+
+@app.route('/health/')
+def health():
+    """健康检查接口"""
+    import os
+    start_time = getattr(app, '_start_time', time.time())
+    
+    # 检查 Redis 连接
+    redis_status = "connected"
+    try:
+        proxy_handler.getCount()
+    except:
+        redis_status = "disconnected"
+    
+    return {
+        "status": "ok" if redis_status == "connected" else "degraded",
+        "version": setting.VERSION,
+        "uptime": int(time.time() - start_time),
+        "redis": redis_status,
+        "proxy_count": proxy_handler.getCount() if redis_status == "connected" else 0,
+        "auth_enabled": setting.AUTH_ENABLED,
+        "rate_limit_enabled": setting.RATE_LIMIT_ENABLED
+    }
+
+
+@app.route('/metrics/')
+def metrics():
+    """Prometheus 指标端点"""
+    try:
+        proxies = proxy_handler.getAll()
+        
+        # 统计数据
+        total_count = len(proxies)
+        https_count = sum(1 for p in proxies if p.https)
+        http_count = total_count - https_count
+        
+        # 延迟分布
+        latency_fast = sum(1 for p in proxies if 0 < p.latency < 500)
+        latency_medium = sum(1 for p in proxies if 500 <= p.latency < 1000)
+        latency_slow = sum(1 for p in proxies if p.latency >= 1000)
+        
+        # 评分分布
+        score_high = sum(1 for p in proxies if p.score >= 80)
+        score_medium = sum(1 for p in proxies if 60 <= p.score < 80)
+        score_low = sum(1 for p in proxies if p.score < 60)
+        
+        # 来源统计
+        source_counts = {}
+        for p in proxies:
+            for src in p.source.split('/'):
+                source_counts[src] = source_counts.get(src, 0) + 1
+        
+        # 平均延迟
+        latencies = [p.latency for p in proxies if p.latency > 0]
+        avg_latency = sum(latencies) / len(latencies) if latencies else 0
+        
+        # 平均评分
+        scores = [p.score for p in proxies]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        # 生成 Prometheus 格式输出
+        lines = [
+            "# HELP proxy_pool_total Total number of proxies in the pool",
+            "# TYPE proxy_pool_total gauge",
+            f"proxy_pool_total {total_count}",
+            "",
+            "# HELP proxy_pool_https Number of HTTPS proxies",
+            "# TYPE proxy_pool_https gauge",
+            f"proxy_pool_https {https_count}",
+            "",
+            "# HELP proxy_pool_http Number of HTTP proxies",
+            "# TYPE proxy_pool_http gauge",
+            f"proxy_pool_http {http_count}",
+            "",
+            "# HELP proxy_pool_latency_avg Average latency in milliseconds",
+            "# TYPE proxy_pool_latency_avg gauge",
+            f"proxy_pool_latency_avg {avg_latency:.2f}",
+            "",
+            "# HELP proxy_pool_score_avg Average quality score",
+            "# TYPE proxy_pool_score_avg gauge",
+            f"proxy_pool_score_avg {avg_score:.2f}",
+            "",
+            "# HELP proxy_pool_latency_bucket Proxies by latency bucket",
+            "# TYPE proxy_pool_latency_bucket gauge",
+            f'proxy_pool_latency_bucket{{bucket="fast"}} {latency_fast}',
+            f'proxy_pool_latency_bucket{{bucket="medium"}} {latency_medium}',
+            f'proxy_pool_latency_bucket{{bucket="slow"}} {latency_slow}',
+            "",
+            "# HELP proxy_pool_score_bucket Proxies by score bucket",
+            "# TYPE proxy_pool_score_bucket gauge",
+            f'proxy_pool_score_bucket{{bucket="high"}} {score_high}',
+            f'proxy_pool_score_bucket{{bucket="medium"}} {score_medium}',
+            f'proxy_pool_score_bucket{{bucket="low"}} {score_low}',
+            "",
+            "# HELP proxy_pool_source Proxies by source",
+            "# TYPE proxy_pool_source gauge",
+        ]
+        
+        for src, count in sorted(source_counts.items(), key=lambda x: -x[1])[:10]:
+            lines.append(f'proxy_pool_source{{source="{src}"}} {count}')
+        
+        response = app.response_class(
+            response="\n".join(lines) + "\n",
+            mimetype="text/plain; charset=utf-8"
+        )
+        return response
+        
+    except Exception as e:
+        return f"# Error: {e}\n", 500
+
+
+# ============ Auth Management Endpoints ============
+
+@app.route('/api/auth/login/', methods=['POST'])
+def login():
+    """验证 API Key 并返回用户信息"""
+    data = request.get_json() or {}
+    api_key = data.get('api_key', '')
+    
+    if not api_key:
+        return {"code": 400, "message": "API Key required"}, 400
+    
+    user_info = auth_handler.validate_key(api_key)
+    if not user_info:
+        return {"code": 401, "message": "Invalid API Key"}, 401
+    
+    # 获取配额信息
+    quota = rate_limit_handler.get_user_quota(user_info.get('name', 'anonymous'))
+    
+    return {
+        "code": 0,
+        "user": user_info,
+        "quota": quota
+    }
+
+
+@app.route('/api/auth/keys/', methods=['GET'])
+@require_admin
+def listKeys():
+    """列出所有 API Keys (仅管理员)"""
+    keys = auth_handler.list_keys()
+    return {"code": 0, "keys": keys}
+
+
+@app.route('/api/auth/keys/', methods=['POST'])
+@require_admin
+def createKey():
+    """创建新的 API Key (仅管理员)"""
+    data = request.get_json() or {}
+    name = data.get('name', '')
+    role = data.get('role', 'user')
+    
+    if not name:
+        return {"code": 400, "message": "Name required"}, 400
+    
+    if role not in ['user', 'admin']:
+        return {"code": 400, "message": "Role must be 'user' or 'admin'"}, 400
+    
+    api_key = auth_handler.create_key(name, role)
+    return {"code": 0, "api_key": api_key, "message": "API Key created successfully"}
+
+
+@app.route('/api/auth/keys/<api_key>/', methods=['DELETE'])
+@require_admin
+def deleteKey(api_key):
+    """删除 API Key (仅管理员)"""
+    if auth_handler.delete_key(api_key):
+        return {"code": 0, "message": "API Key deleted"}
+    return {"code": 404, "message": "API Key not found"}, 404
+
+
+# ============ Usage Statistics Endpoints ============
+
+@app.route('/api/usage/logs/')
+@require_auth
+def getUsageLogs():
+    """获取使用日志"""
+    limit = int(request.args.get('limit', 100))
+    user_filter = request.args.get('user', '')
+    
+    # 普通用户只能看自己的日志
+    if request.user.get('role') != 'admin':
+        user_filter = request.user.get('name')
+    
+    logs = usage_handler.get_recent_logs(limit, user_filter if user_filter else None)
+    return {"code": 0, "logs": logs}
+
+
+@app.route('/api/usage/stats/')
+@require_auth
+def getUsageStats():
+    """获取使用统计"""
+    days = int(request.args.get('days', 7))
+    
+    if request.user.get('role') == 'admin':
+        # 管理员看全局统计
+        stats = usage_handler.get_stats_range(days)
+        summary = usage_handler.get_summary()
+        return {"code": 0, "stats": stats, "summary": summary}
+    else:
+        # 普通用户看自己的统计
+        user_stats = usage_handler.get_user_stats(request.user.get('name'), days)
+        return {"code": 0, "stats": user_stats}
+
+
+@app.route('/api/usage/quota/')
+@require_auth
+def getQuota():
+    """获取当前用户配额"""
+    user = request.user.get('name', 'anonymous')
+    quota = rate_limit_handler.get_user_quota(user)
+    return {"code": 0, "quota": quota}
+
+
+# ============ Alert Management Endpoints ============
+
+@app.route('/api/alerts/', methods=['GET'])
+@require_admin
+def getAlertHistory():
+    """获取告警历史"""
+    from handler.alertHandler import AlertHandler
+    alert_handler = AlertHandler()
+    limit = int(request.args.get('limit', 20))
+    alerts = alert_handler.get_alert_history(limit)
+    return {"code": 0, "alerts": alerts}
+
+
+@app.route('/api/alerts/test/', methods=['POST'])
+@require_admin
+def sendTestAlert():
+    """发送测试告警"""
+    from handler.alertHandler import AlertHandler
+    alert_handler = AlertHandler()
+    alert_handler.send_test_alert()
+    return {"code": 0, "message": "Test alert sent"}
+
+
+@app.route('/api/alerts/check/', methods=['POST'])
+@require_admin
+def checkAlerts():
+    """触发告警检查"""
+    from handler.alertHandler import AlertHandler
+    alert_handler = AlertHandler()
+    triggered = alert_handler.check_and_alert()
+    return {"code": 0, "triggered": triggered}
 
 
 def runFlask():

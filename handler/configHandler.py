@@ -81,3 +81,42 @@ class ConfigHandler(withMetaclass(Singleton)):
     def timezone(self):
         return os.getenv("TIMEZONE", setting.TIMEZONE)
 
+    @LazyProperty
+    def authEnabled(self):
+        return bool(os.getenv("AUTH_ENABLED", setting.AUTH_ENABLED))
+
+    @LazyProperty
+    def rateLimitEnabled(self):
+        return bool(os.getenv("RATE_LIMIT_ENABLED", setting.RATE_LIMIT_ENABLED))
+
+    @LazyProperty
+    def rateLimitPerMinute(self):
+        return int(os.getenv("RATE_LIMIT_PER_MINUTE", setting.RATE_LIMIT_PER_MINUTE))
+
+    @LazyProperty
+    def rateLimitPerDay(self):
+        return int(os.getenv("RATE_LIMIT_PER_DAY", setting.RATE_LIMIT_PER_DAY))
+
+    @LazyProperty
+    def alertEnabled(self):
+        return bool(os.getenv("ALERT_ENABLED", setting.ALERT_ENABLED))
+
+    @LazyProperty
+    def alertWebhook(self):
+        return os.getenv("ALERT_WEBHOOK", setting.ALERT_WEBHOOK)
+
+    @LazyProperty
+    def alertCooldown(self):
+        return int(os.getenv("ALERT_COOLDOWN", setting.ALERT_COOLDOWN))
+
+    @LazyProperty
+    def dynamicFetchThreshold(self):
+        return int(os.getenv("DYNAMIC_FETCH_THRESHOLD", setting.DYNAMIC_FETCH_THRESHOLD))
+
+    @LazyProperty
+    def fetchIntervalNormal(self):
+        return int(os.getenv("FETCH_INTERVAL_NORMAL", setting.FETCH_INTERVAL_NORMAL))
+
+    @LazyProperty
+    def fetchIntervalUrgent(self):
+        return int(os.getenv("FETCH_INTERVAL_URGENT", setting.FETCH_INTERVAL_URGENT))

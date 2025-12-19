@@ -278,6 +278,94 @@ class ProxyFetcher(object):
         except Exception as e:
             print(e)
 
+    @staticmethod
+    def freeProxy19():
+        """
+        GeoNode Free Proxy List https://geonode.com/free-proxy-list
+        使用其公开 API 获取代理
+        """
+        api_url = "https://proxylist.geonode.com/api/proxy-list?limit=100&page=1&sort_by=lastChecked&sort_type=desc"
+        try:
+            r = WebRequest().get(api_url, timeout=15)
+            data = r.json
+            if data and 'data' in data:
+                for proxy in data['data']:
+                    ip = proxy.get('ip', '')
+                    port = proxy.get('port', '')
+                    if ip and port:
+                        yield "%s:%s" % (ip, port)
+        except Exception as e:
+            print(f"freeProxy19 error: {e}")
+
+    @staticmethod
+    def freeProxy20():
+        """
+        TheSpeedX Proxy List (GitHub) 
+        https://github.com/TheSpeedX/PROXY-List
+        """
+        urls = [
+            "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+            "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt",
+        ]
+        for url in urls:
+            try:
+                r = WebRequest().get(url, timeout=15)
+                for line in r.text.splitlines()[:200]:  # 限制每个文件200条以避免过多
+                    proxy = line.strip()
+                    if proxy and ":" in proxy:
+                        yield proxy
+            except Exception as e:
+                print(f"freeProxy20 error: {e}")
+
+    @staticmethod
+    def freeProxy21():
+        """
+        clarketm Proxy List (GitHub)
+        https://github.com/clarketm/proxy-list
+        """
+        url = "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt"
+        try:
+            r = WebRequest().get(url, timeout=15)
+            for line in r.text.splitlines()[:200]:
+                proxy = line.strip()
+                if proxy and ":" in proxy:
+                    yield proxy
+        except Exception as e:
+            print(f"freeProxy21 error: {e}")
+
+    @staticmethod
+    def freeProxy22():
+        """
+        jetkai Proxy List (GitHub)
+        https://github.com/jetkai/proxy-list
+        """
+        url = "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies-http.txt"
+        try:
+            r = WebRequest().get(url, timeout=15)
+            for line in r.text.splitlines()[:200]:
+                proxy = line.strip()
+                if proxy and ":" in proxy:
+                    yield proxy
+        except Exception as e:
+            print(f"freeProxy22 error: {e}")
+
+    @staticmethod
+    def freeProxy23():
+        """
+        monosans Proxy List (GitHub)
+        https://github.com/monosans/proxy-list
+        """
+        url = "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt"
+        try:
+            r = WebRequest().get(url, timeout=15)
+            for line in r.text.splitlines()[:200]:
+                proxy = line.strip()
+                if proxy and ":" in proxy:
+                    yield proxy
+        except Exception as e:
+            print(f"freeProxy23 error: {e}")
+
+
 if __name__ == '__main__':
     p = ProxyFetcher()
     for _ in p.freeProxy05():
