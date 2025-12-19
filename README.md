@@ -228,23 +228,17 @@ PROXY_FETCHER = [
    
   | 代理名称          |  状态  | 浏览器访问(2025-12-20) |  更新速度 |  可用率  |  地址 | 代码                                             |
   |---------------|  ---- | ------------------- | --------  | ------  | ----- |------------------------------------------------|
-  | 66代理          |  ❌    |  ❌ 无法访问  |     -     |   -     | [地址](http://www.66ip.cn/)         | [`freeProxy02`](/fetcher/proxyFetcher.py#L50)  |
-  | 开心代理          |   ❌   |  ❌ 500错误  |     -     |   -     | [地址](http://www.kxdaili.com/)     | [`freeProxy03`](/fetcher/proxyFetcher.py#L63)  |
-  | FreeProxyList |   ❌  |  ❌ 404错误  |    -     |   -    | [地址](https://www.freeproxylists.net/zh/) | [`freeProxy04`](/fetcher/proxyFetcher.py#L74)  |
-  | 快代理           |  ✔    |  ✔ 正常(42414条)  |     ★     |   *     | [地址](https://www.kuaidaili.com/)  | [`freeProxy05`](/fetcher/proxyFetcher.py#L92)  |
-  | 冰凌代理          |  ❌    |  ❌ 403禁止  |    -    |   -     | [地址](https://www.binglx.cn/) | [`freeProxy06`](/fetcher/proxyFetcher.py#L111) |
-  | 云代理           |  ✔    |  ✔ 正常(9322条)  |    ★     |   *     | [地址](http://www.ip3366.net/)      | [`freeProxy07`](/fetcher/proxyFetcher.py#L123) |
-  | 小幻代理          |  ✔    |  ✔ 正常(4453条)  |    ★★    |    *    | [地址](https://ip.ihuan.me/)        | [`freeProxy08`](/fetcher/proxyFetcher.py#L133) |
-  | 免费代理库         |  ❌    |  ❌ 未测试  |     -     |    -    | [地址](http://ip.jiangxianli.com/)   | [`freeProxy09`](/fetcher/proxyFetcher.py#L143) |
-  | 89代理          |  ✔    |  ✔ 正常(4484条)  |     ☆     |   *     | [地址](https://www.89ip.cn/)         | [`freeProxy10`](/fetcher/proxyFetcher.py#L154) |
-  | 稻壳代理          |  ❌    |  ❌ 空白页  |     -    |   -   | [地址](https://www.docip.net)         | [`freeProxy11`](/fetcher/proxyFetcher.py#L164) |
-  | ProxyScrape     |  ✔    |  ✔ 正常(38990条)  |     ★    |   *   | [地址](https://proxyscrape.com/)     | [`freeProxy12`](/fetcher/proxyFetcher.py#L236) |
-  | Spys.one        |  ✔   |  ✔ 正常(有广告)  |     ★    |   *   | [地址](https://spys.one/en/)         | [`freeProxy13`](/fetcher/proxyFetcher.py#L249) |
-  | UU-Proxy        |  ✔   |  ✔ 正常  |     ★    |   *   | [地址](https://uu-proxy.com/)        | [`freeProxy14`](/fetcher/proxyFetcher.py#L262) |
-  | Proxy-List.download| ✔  |  ✔ 正常  |     ★    |   *   | [地址](https://www.proxy-list.download/)| [`freeProxy15`](/fetcher/proxyFetcher.py#L278) |
-  | ProxyNova       |  ✔   |  ✔ 正常  |     ★    |   *   | [地址](https://www.proxynova.com/)   | [`freeProxy16`](/fetcher/proxyFetcher.py#L292) |
-  | FreeProxy.world |  ✔    |  ✔ 正常(46715条)  |     ★    |   *   | [地址](https://www.freeproxy.world/) | [`freeProxy17`](/fetcher/proxyFetcher.py#L322) |
-  | Free-Proxy-List |  ✔    |  ✔ 正常  |     ★    |   *   | [地址](https://free-proxy-list.net/) | [`freeProxy18`](/fetcher/proxyFetcher.py#L340) |
+  | 快代理           |  ✔    |  ✔ 正常(42414条)  |     ★     |   *     | [地址](https://www.kuaidaili.com/)  | [`freeProxy05`](/fetcher/proxyFetcher.py)  |
+  | 云代理           |  ✔    |  ✔ 正常(9322条)  |    ★     |   *     | [地址](http://www.ip3366.net/)      | [`freeProxy07`](/fetcher/proxyFetcher.py) |
+  | 小幻代理          |  ✔    |  ✔ 正常(4453条)  |    ★★    |    *    | [地址](https://ip.ihuan.me/)        | [`freeProxy08`](/fetcher/proxyFetcher.py) |
+  | 89代理          |  ✔    |  ✔ 正常(4484条)  |     ☆     |   *     | [地址](https://www.89ip.cn/)         | [`freeProxy10`](/fetcher/proxyFetcher.py) |
+  | ProxyScrape     |  ✔    |  ✔ 正常(38990条)  |     ★    |   *   | [地址](https://proxyscrape.com/)     | [`freeProxy12`](/fetcher/proxyFetcher.py) |
+  | Spys.one        |  ✔   |  ✔ 正常(有广告)  |     ★    |   *   | [地址](https://spys.one/en/)         | [`freeProxy13`](/fetcher/proxyFetcher.py) |
+  | UU-Proxy        |  ✔   |  ✔ 正常  |     ★    |   *   | [地址](https://uu-proxy.com/)        | [`freeProxy14`](/fetcher/proxyFetcher.py) |
+  | Proxy-List.download| ✔  |  ✔ 正常  |     ★    |   *   | [地址](https://www.proxy-list.download/)| [`freeProxy15`](/fetcher/proxyFetcher.py) |
+  | ProxyNova       |  ✔   |  ✔ 正常  |     ★    |   *   | [地址](https://www.proxynova.com/)   | [`freeProxy16`](/fetcher/proxyFetcher.py) |
+  | FreeProxy.world |  ✔    |  ✔ 正常(46715条)  |     ★    |   *   | [地址](https://www.freeproxy.world/) | [`freeProxy17`](/fetcher/proxyFetcher.py) |
+  | Free-Proxy-List |  ✔    |  ✔ 正常  |     ★    |   *   | [地址](https://free-proxy-list.net/) | [`freeProxy18`](/fetcher/proxyFetcher.py) |
 
   
   如果还有其他好的免费代理网站, 可以在提交在[issues](https://github.com/jhao104/proxy_pool/issues/71), 下次更新时会考虑在项目中支持。

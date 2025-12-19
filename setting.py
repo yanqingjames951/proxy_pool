@@ -45,24 +45,18 @@ TABLE_NAME = 'use_proxy'
 
 # ###### config the proxy fetch function ######
 PROXY_FETCHER = [
-    "freeProxy01",
-    "freeProxy02",
-    "freeProxy03",
-    "freeProxy04",
-    "freeProxy05",
-    "freeProxy06",
-    "freeProxy07",
-    "freeProxy08",
-    "freeProxy09",
-    "freeProxy10",
-    "freeProxy11",
-    "freeProxy12",
-    "freeProxy13",
-    "freeProxy14",
-    "freeProxy15",
-    "freeProxy16",
-    "freeProxy17",
-    "freeProxy18"
+    "freeProxy01",  # 站大爷
+    "freeProxy05",  # 快代理
+    "freeProxy07",  # 云代理
+    "freeProxy08",  # 小幻代理
+    "freeProxy10",  # 89代理
+    "freeProxy12",  # ProxyScrape
+    "freeProxy13",  # Spys.one
+    "freeProxy14",  # UU-Proxy
+    "freeProxy15",  # Proxy-List.download
+    "freeProxy16",  # ProxyNova
+    "freeProxy17",  # FreeProxy.world
+    "freeProxy18",  # Free-Proxy-List
 ]
 
 # ############# proxy validator #################
