@@ -232,6 +232,126 @@ class ProxyFetcher(object):
     #         for proxy in proxies:
     #             yield ':'.join(proxy)
 
+    @staticmethod
+    def freeProxy12():
+        """
+        ProxyScrape https://proxyscrape.com/free-proxy-list
+        """
+        apiUrl = "https://api.proxyscrape.com/v2/?request=displayproxies&protocol=http&timeout=10000&country=all&ssl=all&anonymity=all"
+        try:
+            r = WebRequest().get(apiUrl, timeout=10)
+            proxies = r.text.split()
+            for proxy in proxies:
+                yield proxy.strip()
+        except Exception as e:
+            print(e)
+
+    @staticmethod
+    def freeProxy13():
+        """
+        Spys.one (via spys.me) https://spys.one/en/
+        """
+        url = "http://spys.me/proxy.txt"
+        try:
+            r = WebRequest().get(url, timeout=10)
+            for line in r.text.splitlines():
+                if ":" in line and "Google" not in line: # Basic filter
+                    ip_port = line.split()[0]
+                    yield ip_port
+        except Exception as e:
+            print(e)
+            
+    @staticmethod
+    def freeProxy14():
+        """
+        UU-Proxy https://uu-proxy.com/
+        """
+        url = "https://uu-proxy.com/"
+        try:
+            tree = WebRequest().get(url).tree
+            for tr in tree.xpath("//table//tr")[1:]:
+                ip = "".join(tr.xpath("./td[1]/text()")).strip()
+                port = "".join(tr.xpath("./td[2]/text()")).strip()
+                if ip and port:
+                    yield "%s:%s" % (ip, port)
+        except Exception as e:
+            print(e)
+
+    @staticmethod
+    def freeProxy15():
+        """
+        Proxy-List.download https://www.proxy-list.download/
+        """
+        apiUrl = "https://www.proxy-list.download/api/v1/get?type=http"
+        try:
+            r = WebRequest().get(apiUrl, timeout=10)
+            for line in r.text.splitlines():
+                 if line.strip():
+                    yield line.strip()
+        except Exception as e:
+            print(e)
+
+    @staticmethod
+    def freeProxy16():
+        """
+        ProxyNova https://www.proxynova.com/proxy-server-list/
+        """
+        url = "https://www.proxynova.com/proxy-server-list/"
+        try:
+            tree = WebRequest().get(url).tree
+            for tr in tree.xpath("//table[@id='tbl_proxy_list']//tr")[1:]:
+                # IP extraction might fail if JS obfuscated, but trying standard way first
+                # Often ProxyNova puts IP in a script tag document.write
+                script_text = "".join(tr.xpath("./td[1]/abbr/script/text()"))
+                if script_text:
+                    # Simple heuristic: regex extract numbers if possible or skip if too complex
+                    # ProxyNova is notoriously hard to scrape without full browser
+                    pass 
+                
+                # Fallback: check if raw text exists (sometimes it does)
+                ip = "".join(tr.xpath("./td[1]/abbr/text()")).strip()
+                port = "".join(tr.xpath("./td[2]/text()")).strip()
+                
+                # If IP is empty, simpler scraping won't work easily without JS evaluation
+                if ip and port:
+                     yield "%s:%s" % (ip, port)
+        except Exception as e:
+            print(e)
+
+    @staticmethod
+    def freeProxy17():
+        """
+        FreeProxy.world https://www.freeproxy.world/
+        """
+        base_url = "https://www.freeproxy.world/?page={}"
+        for page in range(1, 6): # Verify first 5 pages
+            url = base_url.format(page)
+            try:
+                tree = WebRequest().get(url).tree
+                for tr in tree.xpath("//table//tr"):
+                    ip = "".join(tr.xpath("./td[1]/text()")).strip()
+                    port = "".join(tr.xpath("./td[2]/a/text()")).strip()
+                    if ip and port:
+                        yield "%s:%s" % (ip, port)
+                sleep(1)
+            except Exception as e:
+                print(e)
+
+    @staticmethod
+    def freeProxy18():
+        """
+        Free-Proxy-List.net https://free-proxy-list.net/
+        """
+        url = "https://free-proxy-list.net/"
+        try:
+            tree = WebRequest().get(url).tree
+            for tr in tree.xpath("//table//tr")[1:]:
+                ip = "".join(tr.xpath("./td[1]/text()")).strip()
+                port = "".join(tr.xpath("./td[2]/text()")).strip()
+                if ip and port:
+                    yield "%s:%s" % (ip, port)
+        except Exception as e:
+            print(e)
 
 if __name__ == '__main__':
     p = ProxyFetcher()
