@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   DashboardOutlined,
   UnorderedListOutlined,
@@ -11,27 +12,32 @@ import {
   LogoutOutlined,
   UserOutlined,
   BulbOutlined,
-  BulbFilled
+  BulbFilled,
+  GlobalOutlined
 } from '@ant-design/icons-vue'
 import { message, theme } from 'ant-design-vue'
+import { setLocale, supportedLocales, getLocale } from './locales'
 
+const { t, locale } = useI18n()
 const router = useRouter()
 const route = useRoute()
 
 const collapsed = ref(false)
 const selectedKeys = computed(() => [route.name as string])
 const userInfo = ref<any>(null)
+const currentLocale = ref(getLocale())
 
 // 暗黑模式
 const isDarkMode = ref(false)
 
-const menuItems = [
-  { key: 'dashboard', icon: DashboardOutlined, label: '仪表盘', path: '/' },
-  { key: 'proxies', icon: UnorderedListOutlined, label: '代理列表', path: '/proxies' },
-  { key: 'sources', icon: CloudServerOutlined, label: '代理源', path: '/sources' },
-  { key: 'tools', icon: ToolOutlined, label: '工具', path: '/tools' },
-  { key: 'admin', icon: SettingOutlined, label: '管理', path: '/admin' },
-]
+// 菜单项使用 i18n
+const menuItems = computed(() => [
+  { key: 'dashboard', icon: DashboardOutlined, label: t('nav.dashboard'), path: '/' },
+  { key: 'proxies', icon: UnorderedListOutlined, label: t('nav.proxies'), path: '/proxies' },
+  { key: 'sources', icon: CloudServerOutlined, label: t('nav.sources'), path: '/sources' },
+  { key: 'tools', icon: ToolOutlined, label: t('nav.tools'), path: '/tools' },
+  { key: 'admin', icon: SettingOutlined, label: t('nav.admin'), path: '/admin' },
+])
 
 const isLoggedIn = computed(() => !!localStorage.getItem('api_key'))
 const isLoginPage = computed(() => route.path === '/login')
@@ -54,7 +60,7 @@ onMounted(() => {
 })
 
 const handleMenuClick = (item: { key: string }) => {
-  const menuItem = menuItems.find(m => m.key === item.key)
+  const menuItem = menuItems.value.find((m: any) => m.key === item.key)
   if (menuItem) {
     router.push(menuItem.path)
   }
@@ -64,8 +70,14 @@ const logout = () => {
   localStorage.removeItem('api_key')
   localStorage.removeItem('user_info')
   userInfo.value = null
-  message.success('已退出登录')
+  message.success(t('auth.logout'))
   router.push('/login')
+}
+
+// 切换语言
+const switchLocale = (code: string) => {
+  setLocale(code)
+  currentLocale.value = code
 }
 
 const toggleTheme = () => {
@@ -132,6 +144,21 @@ watch(isDarkMode, applyTheme)
                 </a-button>
               </a-tooltip>
               
+              <!-- 语言切换 -->
+              <a-dropdown>
+                <a-button type="text" class="lang-toggle">
+                  <GlobalOutlined style="font-size: 18px;" />
+                  <span style="margin-left: 4px;">{{ (supportedLocales as any[]).find((l: any) => l.code === currentLocale)?.flag }}</span>
+                </a-button>
+                <template #overlay>
+                  <a-menu @click="(info: any) => switchLocale(info.key)">
+                    <a-menu-item v-for="lang in supportedLocales" :key="lang.code">
+                      {{ lang.flag }} {{ lang.name }}
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+              
               <template v-if="userInfo">
                 <a-dropdown>
                   <a class="user-info" @click.prevent>
@@ -148,7 +175,7 @@ watch(isDarkMode, applyTheme)
                   </template>
                 </a-dropdown>
               </template>
-              <a href="https://github.com/jhao104/proxy_pool" target="_blank" class="github-link">
+              <a href="https://github.com/yanqingjames951/proxy_pool" target="_blank" class="github-link">
                 <GithubOutlined /> GitHub
               </a>
             </div>
@@ -271,7 +298,10 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: color 0.2s;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: color 0.2s, background 0.2s;
 }
 
 .dark-header .github-link {
@@ -280,6 +310,29 @@ body {
 
 .github-link:hover {
   color: #1890ff;
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.lang-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  height: 36px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.dark-header .lang-toggle {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.lang-toggle:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dark-header .lang-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .content {

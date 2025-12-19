@@ -40,7 +40,7 @@ ProxyPool 爬虫代理IP池
 * git clone
 
 ```bash
-git clone git@github.com:jhao104/proxy_pool.git
+git clone git@github.com:yanqingjames951/proxy_pool.git
 ```
 
 * releases
@@ -101,7 +101,7 @@ python proxyPool.py server
 
 ```bash
 # 克隆项目
-git clone git@github.com:jhao104/proxy_pool.git
+git clone git@github.com:yanqingjames951/proxy_pool.git
 cd proxy_pool
 
 # 启动所有服务
