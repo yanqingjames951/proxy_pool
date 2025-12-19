@@ -54,25 +54,170 @@ class JsonResponse(Response):
 
 app.response_class = JsonResponse
 
-api_list = [
-    {"url": "/get", "params": "type: ''https'|''", "desc": "get a proxy"},
-    {"url": "/get_batch", "params": "count, type, region", "desc": "get multiple proxies"},
-    {"url": "/pop", "params": "", "desc": "get and delete a proxy"},
-    {"url": "/delete", "params": "proxy: 'e.g. 127.0.0.1:8080'", "desc": "delete an unable proxy"},
-    {"url": "/all", "params": "type: ''https'|''", "desc": "get all proxy from proxy pool"},
-    {"url": "/count", "params": "", "desc": "return proxy count"},
-    {"url": "/export", "params": "format, type, region, count", "desc": "export proxies as txt/json/csv"},
-    {"url": "/api/proxies", "params": "page, size, https, region, source", "desc": "paginated proxy list"},
-    {"url": "/api/delete_batch", "params": "proxies[]", "desc": "batch delete proxies"},
-    {"url": "/api/test", "params": "proxy, url", "desc": "test a proxy"},
-    {"url": "/api/sources", "params": "", "desc": "get source statistics"},
-    {"url": "/api/config", "params": "", "desc": "get system config"},
-]
+# 详细 API 文档
+API_DOCS = {
+    "info": {
+        "title": "Proxy Pool API",
+        "version": "2.4.0",
+        "description": "代理池 API 服务，提供代理获取、管理、监控等功能"
+    },
+    "endpoints": [
+        {
+            "path": "/get/",
+            "method": "GET",
+            "summary": "获取单个代理",
+            "params": [
+                {"name": "type", "type": "string", "required": False, "desc": "协议类型: 'https' 或留空"}
+            ],
+            "response": {"proxy": "ip:port", "https": True, "score": 85, "latency": 450}
+        },
+        {
+            "path": "/get_batch/",
+            "method": "GET",
+            "summary": "批量获取代理",
+            "params": [
+                {"name": "count", "type": "int", "required": False, "default": 10, "desc": "获取数量(最大100)"},
+                {"name": "type", "type": "string", "required": False, "desc": "协议类型"},
+                {"name": "region", "type": "string", "required": False, "desc": "地区过滤"}
+            ],
+            "response": {"code": 0, "count": 10, "proxies": []}
+        },
+        {
+            "path": "/pop/",
+            "method": "GET",
+            "summary": "获取并删除一个代理",
+            "params": [{"name": "type", "type": "string", "required": False, "desc": "协议类型"}],
+            "response": {"proxy": "ip:port", "https": True}
+        },
+        {
+            "path": "/export/",
+            "method": "GET",
+            "summary": "导出代理列表",
+            "params": [
+                {"name": "format", "type": "string", "required": False, "default": "txt", "desc": "格式: txt/json/csv"},
+                {"name": "count", "type": "int", "required": False, "default": 100, "desc": "导出数量"},
+                {"name": "type", "type": "string", "required": False, "desc": "协议类型"},
+                {"name": "region", "type": "string", "required": False, "desc": "地区过滤"}
+            ],
+            "response": "file download"
+        },
+        {
+            "path": "/all/",
+            "method": "GET",
+            "summary": "获取所有代理",
+            "params": [{"name": "type", "type": "string", "required": False, "desc": "协议类型"}],
+            "response": []
+        },
+        {
+            "path": "/count/",
+            "method": "GET",
+            "summary": "获取代理统计",
+            "params": [],
+            "response": {"count": 1000, "http_type": {}, "source": {}, "region": {}}
+        },
+        {
+            "path": "/delete/",
+            "method": "GET",
+            "summary": "删除指定代理",
+            "params": [{"name": "proxy", "type": "string", "required": True, "desc": "代理地址 ip:port"}],
+            "response": {"code": 0, "src": "success"}
+        },
+        {
+            "path": "/health/",
+            "method": "GET",
+            "summary": "健康检查",
+            "params": [],
+            "response": {"status": "ok", "redis": "connected", "proxy_count": 1000}
+        },
+        {
+            "path": "/metrics/",
+            "method": "GET",
+            "summary": "Prometheus 指标",
+            "params": [],
+            "response": "prometheus text format"
+        },
+        {
+            "path": "/api/proxies/",
+            "method": "GET",
+            "summary": "分页查询代理",
+            "auth": True,
+            "params": [
+                {"name": "page", "type": "int", "required": False, "default": 1, "desc": "页码"},
+                {"name": "size", "type": "int", "required": False, "default": 20, "desc": "每页数量"},
+                {"name": "https", "type": "string", "required": False, "desc": "过滤 HTTPS"},
+                {"name": "region", "type": "string", "required": False, "desc": "地区过滤"},
+                {"name": "source", "type": "string", "required": False, "desc": "来源过滤"},
+                {"name": "sort", "type": "string", "required": False, "default": "latency", "desc": "排序字段"},
+                {"name": "order", "type": "string", "required": False, "default": "asc", "desc": "排序方向"}
+            ],
+            "response": {"data": [], "total": 1000, "page": 1, "size": 20, "pages": 50}
+        },
+        {
+            "path": "/api/auth/login/",
+            "method": "POST",
+            "summary": "验证 API Key",
+            "params": [{"name": "api_key", "type": "string", "required": True, "desc": "API Key", "in": "body"}],
+            "response": {"code": 0, "user": {"name": "admin", "role": "admin"}}
+        },
+        {
+            "path": "/api/auth/keys/",
+            "method": "GET",
+            "summary": "获取所有 API Keys (管理员)",
+            "auth": "admin",
+            "params": [],
+            "response": {"code": 0, "keys": []}
+        },
+        {
+            "path": "/api/auth/keys/",
+            "method": "POST",
+            "summary": "创建 API Key (管理员)",
+            "auth": "admin",
+            "params": [
+                {"name": "name", "type": "string", "required": True, "desc": "用户名", "in": "body"},
+                {"name": "role", "type": "string", "required": False, "default": "user", "desc": "角色", "in": "body"}
+            ],
+            "response": {"code": 0, "api_key": "xxx"}
+        },
+        {
+            "path": "/api/usage/logs/",
+            "method": "GET",
+            "summary": "获取使用日志",
+            "auth": True,
+            "params": [{"name": "limit", "type": "int", "required": False, "default": 100, "desc": "记录数量"}],
+            "response": {"code": 0, "logs": []}
+        },
+        {
+            "path": "/api/usage/stats/",
+            "method": "GET",
+            "summary": "获取使用统计",
+            "auth": True,
+            "params": [],
+            "response": {"code": 0, "stats": {}}
+        },
+        {
+            "path": "/api/alerts/",
+            "method": "GET",
+            "summary": "获取告警历史",
+            "auth": "admin",
+            "params": [{"name": "limit", "type": "int", "required": False, "default": 20, "desc": "记录数量"}],
+            "response": {"code": 0, "alerts": []}
+        }
+    ]
+}
+
+# 简化列表用于首页
+api_list = [{"url": e["path"], "method": e["method"], "desc": e["summary"]} for e in API_DOCS["endpoints"]]
 
 
 @app.route('/')
 def index():
     return {'url': api_list}
+
+
+@app.route('/docs/')
+def docs():
+    """完整 API 文档"""
+    return API_DOCS
 
 
 @app.route('/get/')
@@ -606,6 +751,57 @@ def checkAlerts():
     alert_handler = AlertHandler()
     triggered = alert_handler.check_and_alert()
     return {"code": 0, "triggered": triggered}
+
+
+# ============ Cleanup Management Endpoints ============
+
+@app.route('/api/cleanup/', methods=['GET'])
+@require_admin
+def getCleanupStats():
+    """获取清理统计信息"""
+    from handler.cleanupHandler import CleanupHandler
+    cleanup_handler = CleanupHandler()
+    stats = cleanup_handler.get_cleanup_stats()
+    return {"code": 0, "stats": stats}
+
+
+@app.route('/api/cleanup/', methods=['POST'])
+@require_admin
+def runCleanup():
+    """执行清理操作"""
+    from handler.cleanupHandler import CleanupHandler
+    cleanup_handler = CleanupHandler()
+    
+    data = request.get_json() or {}
+    cleanup_type = data.get('type', 'all')
+    
+    if cleanup_type == 'stale':
+        max_age = data.get('max_age_hours', 72)
+        result = {"stale": cleanup_handler.cleanup_stale_proxies(max_age)}
+    elif cleanup_type == 'low_score':
+        min_score = data.get('min_score', 30)
+        result = {"low_score": cleanup_handler.cleanup_low_score_proxies(min_score)}
+    elif cleanup_type == 'failed':
+        max_fail = data.get('max_fail_count', 5)
+        result = {"failed": cleanup_handler.cleanup_failed_proxies(max_fail)}
+    else:
+        result = cleanup_handler.run_full_cleanup()
+    
+    return {"code": 0, "result": result}
+
+
+@app.route('/api/cleanup/start/', methods=['POST'])
+@require_admin
+def startCleanupScheduler():
+    """启动自动清理调度器"""
+    from handler.cleanupHandler import CleanupHandler
+    cleanup_handler = CleanupHandler()
+    
+    data = request.get_json() or {}
+    interval = data.get('interval_hours', 6)
+    
+    cleanup_handler.start_cleanup_scheduler(interval)
+    return {"code": 0, "message": f"Cleanup scheduler started with {interval}h interval"}
 
 
 def runFlask():

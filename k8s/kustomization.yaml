@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: proxy-pool
+
+resources:
+- deployment.yaml
+
+# 用于生产环境的补丁
+# patches:
+# - path: patches/production.yaml
+
+# 镜像标签覆盖（用于 CI/CD）
+# images:
+# - name: proxy-pool
+#   newName: your-registry.com/proxy-pool
+#   newTag: v2.4.0
+# - name: proxy-ui
+#   newName: your-registry.com/proxy-ui
+#   newTag: v2.4.0
+
+# 配置生成器
+# configMapGenerator:
+# - name: proxy-pool-config
+#   behavior: merge
+#   literals:
+#   - POOL_SIZE_MIN=100
