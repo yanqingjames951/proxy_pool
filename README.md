@@ -2,9 +2,7 @@
 ProxyPool 爬虫代理IP池
 =======
 [![Build Status](https://travis-ci.org/jhao104/proxy_pool.svg?branch=master)](https://travis-ci.org/jhao104/proxy_pool)
-[![](https://img.shields.io/badge/Powered%20by-@j_hao104-green.svg)](http://www.spiderpy.cn/blog/)
 [![Packagist](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://github.com/jhao104/proxy_pool/blob/master/LICENSE)
-[![GitHub contributors](https://img.shields.io/github/contributors/jhao104/proxy_pool.svg)](https://github.com/jhao104/proxy_pool/graphs/contributors)
 [![](https://img.shields.io/badge/language-Python-green.svg)](https://github.com/jhao104/proxy_pool)
 
     ______                        ______             _
@@ -20,20 +18,19 @@ ProxyPool 爬虫代理IP池
 
 爬虫代理IP池项目,主要功能为定时采集网上发布的免费代理验证入库，定时验证入库的代理保证代理的可用性，提供API和CLI两种使用方式。同时你也可以扩展代理源以增加代理池IP的质量和数量。
 
+**新增功能：现代化 Web 仪表盘** 🎉
+- 📊 实时统计面板（总代理数、协议分布、地区分布）
+- 📋 代理列表管理（分页、筛选、排序、批量删除）
+- ⚡ 延迟监控（按响应速度排序）
+- 🧪 在线代理测试工具
+- 📡 代理源监控
+
 * 文档: [document](https://proxy-pool.readthedocs.io/zh/latest/) [![Documentation Status](https://readthedocs.org/projects/proxy-pool/badge/?version=latest)](https://proxy-pool.readthedocs.io/zh/latest/?badge=latest)
 
-* 支持版本: [![](https://img.shields.io/badge/Python-2.7-green.svg)](https://docs.python.org/2.7/)
-[![](https://img.shields.io/badge/Python-3.5-blue.svg)](https://docs.python.org/3.5/)
-[![](https://img.shields.io/badge/Python-3.6-blue.svg)](https://docs.python.org/3.6/)
-[![](https://img.shields.io/badge/Python-3.7-blue.svg)](https://docs.python.org/3.7/)
-[![](https://img.shields.io/badge/Python-3.8-blue.svg)](https://docs.python.org/3.8/)
-[![](https://img.shields.io/badge/Python-3.9-blue.svg)](https://docs.python.org/3.9/)
+* 支持版本: [![](https://img.shields.io/badge/Python-3.9-blue.svg)](https://docs.python.org/3.9/)
 [![](https://img.shields.io/badge/Python-3.10-blue.svg)](https://docs.python.org/3.10/)
 [![](https://img.shields.io/badge/Python-3.11-blue.svg)](https://docs.python.org/3.11/)
-
-* 测试地址: http://demo.spiderpy.cn (勿压谢谢)
-
-* 付费代理推荐: [luminati-china](https://get.brightdata.com/github_jh). 国外的亮数据BrightData（以前叫luminati）被认为是代理市场领导者，覆盖全球的7200万IP，大部分是真人住宅IP，成功率扛扛的。付费套餐多种，需要高质量代理IP的可以注册后联系中文客服。[申请免费试用](https://get.brightdata.com/github_jh) 目前有50%折扣优惠活动。(PS:用不明白的同学可以参考这个[使用教程](https://www.cnblogs.com/jhao/p/15611785.html))。
+[![](https://img.shields.io/badge/Python-3.12-blue.svg)](https://docs.python.org/3.12/)
 
 
 ### 运行项目
@@ -67,12 +64,12 @@ pip install -r requirements.txt
 # 配置API服务
 
 HOST = "0.0.0.0"               # IP
-PORT = 5000                    # 监听端口
+PORT = 5010                    # 监听端口
 
 
 # 配置数据库
 
-DB_CONN = 'redis://:pwd@127.0.0.1:8888/0'
+DB_CONN = 'redis://:pwd@127.0.0.1:6379/0'
 
 
 # 配置 ProxyFetcher
@@ -98,18 +95,32 @@ python proxyPool.py server
 
 ```
 
-### Docker Image
+### Docker 部署 (推荐)
+
+使用 Docker Compose 一键部署后端 API + 前端仪表盘 + Redis：
 
 ```bash
-docker pull jhao104/proxy_pool
+# 克隆项目
+git clone git@github.com:jhao104/proxy_pool.git
+cd proxy_pool
 
-docker run --env DB_CONN=redis://:password@ip:port/0 -p 5010:5010 jhao104/proxy_pool:latest
+# 启动所有服务
+docker compose up -d
+
+# 查看服务状态
+docker compose ps
+
+# 查看日志
+docker compose logs -f proxy_pool
 ```
-### docker-compose
 
-项目目录下运行: 
-``` bash
-docker-compose up -d
+服务启动后访问：
+- **API 服务**: http://127.0.0.1:5010
+- **Web 仪表盘**: http://127.0.0.1:5011
+
+停止服务：
+```bash
+docker compose down
 ```
 
 ### 使用
@@ -126,6 +137,16 @@ docker-compose up -d
 | /all | GET | 获取所有代理 |可选参数: `?type=https` 过滤支持https的代理|
 | /count | GET | 查看代理数量 |None|
 | /delete | GET | 删除代理  |`?proxy=host:ip`|
+
+**仪表盘 API (新增)**:
+
+| api | method | Description | params|
+| ----| ---- | ---- | ----|
+| /api/proxies/ | GET | 分页获取代理列表 | `page`, `size`, `https`, `region`, `source`, `sort`, `order` |
+| /api/delete_batch/ | POST | 批量删除代理 | `proxies[]` |
+| /api/test/ | GET/POST | 测试代理连通性 | `proxy`, `url` |
+| /api/sources/ | GET | 获取代理源统计 | None |
+| /api/config/ | GET | 获取系统配置 | None |
 
 
 * 爬虫使用
@@ -203,34 +224,34 @@ PROXY_FETCHER = [
 
 ### 免费代理源
 
-   目前实现的采集免费代理网站有(排名不分先后, 下面仅是对其发布的免费代理情况, 付费代理测评可以参考[这里](https://zhuanlan.zhihu.com/p/33576641)): 
+   目前实现的采集免费代理网站有(排名不分先后): 
    
-  | 代理名称          |  状态  |  更新速度 |  可用率  |  地址 | 代码                                             |
-  |---------------|  ---- | --------  | ------  | ----- |------------------------------------------------|
-  | 66代理          |  ❌    |     -     |   -     | [地址](http://www.66ip.cn/)         | [`freeProxy02`](/fetcher/proxyFetcher.py#L50)  |
-  | 开心代理          |   ✔   |     ★     |   *     | [地址](http://www.kxdaili.com/)     | [`freeProxy03`](/fetcher/proxyFetcher.py#L63)  |
-  | FreeProxyList |   ❌  |    -     |   -    | [地址](https://www.freeproxylists.net/zh/) | [`freeProxy04`](/fetcher/proxyFetcher.py#L74)  |
-  | 快代理           |  ✔    |     ★     |   *     | [地址](https://www.kuaidaili.com/)  | [`freeProxy05`](/fetcher/proxyFetcher.py#L92)  |
-  | 冰凌代理          |  ❌    |    -    |   -     | [地址](https://www.binglx.cn/) | [`freeProxy06`](/fetcher/proxyFetcher.py#L111) |
-  | 云代理           |  ✔    |    ★     |   *     | [地址](http://www.ip3366.net/)      | [`freeProxy07`](/fetcher/proxyFetcher.py#L123) |
-  | 小幻代理          |  ✔    |    ★★    |    *    | [地址](https://ip.ihuan.me/)        | [`freeProxy08`](/fetcher/proxyFetcher.py#L133) |
-  | 免费代理库         |  ❌    |     -     |    -    | [地址](http://ip.jiangxianli.com/)   | [`freeProxy09`](/fetcher/proxyFetcher.py#L143) |
-  | 89代理          |  ✔    |     ☆     |   *     | [地址](https://www.89ip.cn/)         | [`freeProxy10`](/fetcher/proxyFetcher.py#L154) |
-  | 稻壳代理          |  ❌    |     -    |   -   | [地址](https://www.docip.ne)         | [`freeProxy11`](/fetcher/proxyFetcher.py#L164) |
-  | ProxyScrape     |  ✔    |     ★    |   *   | [地址](https://proxyscrape.com/)     | [`freeProxy12`](/fetcher/proxyFetcher.py#L236) |
-  | Spys.one        |  ❌   |     ★    |   *   | [地址](https://spys.one/en/)         | [`freeProxy13`](/fetcher/proxyFetcher.py#L249) |
-  | UU-Proxy        |  ❌   |     ★    |   *   | [地址](https://uu-proxy.com/)        | [`freeProxy14`](/fetcher/proxyFetcher.py#L262) |
-  | Proxy-List.download| ✔  |     ★    |   *   | [地址](https://www.proxy-list.download/)| [`freeProxy15`](/fetcher/proxyFetcher.py#L278) |
-  | ProxyNova       |  ❌   |     -    |   -   | [地址](https://www.proxynova.com/)   | [`freeProxy16`](/fetcher/proxyFetcher.py#L292) |
-  | FreeProxy.world |  ✔    |     ★    |   *   | [地址](https://www.freeproxy.world/) | [`freeProxy17`](/fetcher/proxyFetcher.py#L322) |
-  | Free-Proxy-List |  ✔    |     ★    |   *   | [地址](https://free-proxy-list.net/) | [`freeProxy18`](/fetcher/proxyFetcher.py#L340) |
+  | 代理名称          |  状态  | 浏览器访问(2025-12-20) |  更新速度 |  可用率  |  地址 | 代码                                             |
+  |---------------|  ---- | ------------------- | --------  | ------  | ----- |------------------------------------------------|
+  | 66代理          |  ❌    |  ❌ 无法访问  |     -     |   -     | [地址](http://www.66ip.cn/)         | [`freeProxy02`](/fetcher/proxyFetcher.py#L50)  |
+  | 开心代理          |   ❌   |  ❌ 500错误  |     -     |   -     | [地址](http://www.kxdaili.com/)     | [`freeProxy03`](/fetcher/proxyFetcher.py#L63)  |
+  | FreeProxyList |   ❌  |  ❌ 404错误  |    -     |   -    | [地址](https://www.freeproxylists.net/zh/) | [`freeProxy04`](/fetcher/proxyFetcher.py#L74)  |
+  | 快代理           |  ✔    |  ✔ 正常(42414条)  |     ★     |   *     | [地址](https://www.kuaidaili.com/)  | [`freeProxy05`](/fetcher/proxyFetcher.py#L92)  |
+  | 冰凌代理          |  ❌    |  ❌ 403禁止  |    -    |   -     | [地址](https://www.binglx.cn/) | [`freeProxy06`](/fetcher/proxyFetcher.py#L111) |
+  | 云代理           |  ✔    |  ✔ 正常(9322条)  |    ★     |   *     | [地址](http://www.ip3366.net/)      | [`freeProxy07`](/fetcher/proxyFetcher.py#L123) |
+  | 小幻代理          |  ✔    |  ✔ 正常(4453条)  |    ★★    |    *    | [地址](https://ip.ihuan.me/)        | [`freeProxy08`](/fetcher/proxyFetcher.py#L133) |
+  | 免费代理库         |  ❌    |  ❌ 未测试  |     -     |    -    | [地址](http://ip.jiangxianli.com/)   | [`freeProxy09`](/fetcher/proxyFetcher.py#L143) |
+  | 89代理          |  ✔    |  ✔ 正常(4484条)  |     ☆     |   *     | [地址](https://www.89ip.cn/)         | [`freeProxy10`](/fetcher/proxyFetcher.py#L154) |
+  | 稻壳代理          |  ❌    |  ❌ 空白页  |     -    |   -   | [地址](https://www.docip.net)         | [`freeProxy11`](/fetcher/proxyFetcher.py#L164) |
+  | ProxyScrape     |  ✔    |  ✔ 正常(38990条)  |     ★    |   *   | [地址](https://proxyscrape.com/)     | [`freeProxy12`](/fetcher/proxyFetcher.py#L236) |
+  | Spys.one        |  ✔   |  ✔ 正常(有广告)  |     ★    |   *   | [地址](https://spys.one/en/)         | [`freeProxy13`](/fetcher/proxyFetcher.py#L249) |
+  | UU-Proxy        |  ✔   |  ✔ 正常  |     ★    |   *   | [地址](https://uu-proxy.com/)        | [`freeProxy14`](/fetcher/proxyFetcher.py#L262) |
+  | Proxy-List.download| ✔  |  ✔ 正常  |     ★    |   *   | [地址](https://www.proxy-list.download/)| [`freeProxy15`](/fetcher/proxyFetcher.py#L278) |
+  | ProxyNova       |  ✔   |  ✔ 正常  |     ★    |   *   | [地址](https://www.proxynova.com/)   | [`freeProxy16`](/fetcher/proxyFetcher.py#L292) |
+  | FreeProxy.world |  ✔    |  ✔ 正常(46715条)  |     ★    |   *   | [地址](https://www.freeproxy.world/) | [`freeProxy17`](/fetcher/proxyFetcher.py#L322) |
+  | Free-Proxy-List |  ✔    |  ✔ 正常  |     ★    |   *   | [地址](https://free-proxy-list.net/) | [`freeProxy18`](/fetcher/proxyFetcher.py#L340) |
 
   
   如果还有其他好的免费代理网站, 可以在提交在[issues](https://github.com/jhao104/proxy_pool/issues/71), 下次更新时会考虑在项目中支持。
 
 ### 问题反馈
 
-　　任何问题欢迎在[Issues](https://github.com/jhao104/proxy_pool/issues) 中反馈，同时也可以到我的[博客](http://www.spiderpy.cn/blog/message)中留言。
+　　任何问题欢迎在[Issues](https://github.com/jhao104/proxy_pool/issues) 中反馈，同时也可以到我的[博客](http://www.spiderpy.cn/blog)中留言。
 
 　　你的反馈会让此项目变得更加完美。
 
@@ -248,5 +269,3 @@ PROXY_FETCHER = [
 ### Release Notes
 
    [changelog](https://github.com/jhao104/proxy_pool/blob/master/docs/changelog.rst)
-
-<a href="https://hellogithub.com/repository/92a066e658d147cc8bd8397a1cb88183" target="_blank"><img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=92a066e658d147cc8bd8397a1cb88183&claim_uid=DR60NequsjP54Lc" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" /></a>
