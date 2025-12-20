@@ -317,6 +317,7 @@ def getAll():
 
 
 @app.route('/delete/', methods=['GET'])
+@require_admin
 def delete():
     proxy = request.args.get('proxy')
     status = proxy_handler.delete(Proxy(proxy))
@@ -347,6 +348,7 @@ def getCount():
 # ============ Dashboard API Endpoints ============
 
 @app.route('/api/proxies/')
+@require_auth
 def getProxiesPaginated():
     """Get paginated proxy list with filters and sorting"""
     page = int(request.args.get('page', 1))
@@ -401,6 +403,7 @@ def getProxiesPaginated():
 
 
 @app.route('/api/delete_batch/', methods=['POST'])
+@require_admin
 def deleteBatch():
     """Batch delete proxies"""
     data = request.get_json() or {}
