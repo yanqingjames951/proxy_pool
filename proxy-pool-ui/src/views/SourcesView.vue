@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { Bar } from 'vue-chartjs'
+import { useI18n } from 'vue-i18n'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +13,8 @@ import {
 } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
+
+const { t } = useI18n()
 
 interface SourceStat {
   name: string
@@ -65,15 +68,15 @@ const chartOptions = {
   }
 }
 
-const columns = [
+const columns = computed(() => [
   {
-    title: '来源名称',
+    title: t('sources.name'),
     dataIndex: 'name',
     key: 'name',
     width: 180
   },
   {
-    title: '总数',
+    title: t('sources.total'),
     dataIndex: 'total',
     key: 'total',
     width: 100,
@@ -92,11 +95,11 @@ const columns = [
     width: 100
   },
   {
-    title: '地区分布',
+    title: t('sources.regions'),
     key: 'regions',
     width: 300
   }
-]
+])
 
 onMounted(() => {
   fetchSources()
@@ -110,7 +113,7 @@ onMounted(() => {
       <a-row :gutter="[16, 16]" class="summary-row">
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card">
-            <a-statistic title="活跃代理源" :value="totalSources">
+            <a-statistic :title="t('sources.activeSources')" :value="totalSources">
               <template #prefix>
                 <span class="stat-icon">📡</span>
               </template>
@@ -120,7 +123,7 @@ onMounted(() => {
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card">
             <a-statistic 
-              title="总代理数" 
+              :title="t('sources.totalProxies')" 
               :value="sources.reduce((sum, s) => sum + s.total, 0)"
             >
               <template #prefix>
@@ -132,7 +135,7 @@ onMounted(() => {
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card">
             <a-statistic 
-              title="最大来源" 
+              :title="t('sources.topSource')" 
               :value="sources[0]?.name || '-'"
             >
               <template #prefix>
@@ -144,7 +147,7 @@ onMounted(() => {
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card">
             <a-statistic 
-              title="最大来源代理数" 
+              :title="t('sources.topSourceCount')" 
               :value="sources[0]?.total || 0"
             >
               <template #prefix>
@@ -156,10 +159,10 @@ onMounted(() => {
       </a-row>
 
       <!-- Sources Table -->
-      <a-card title="代理源详情" class="table-card" :bordered="false">
+      <a-card :title="t('sources.details')" class="table-card" :bordered="false">
         <template #extra>
           <a-button type="primary" @click="fetchSources">
-            🔄 刷新
+            🔄 {{ t('dashboard.refresh') }}
           </a-button>
         </template>
         
@@ -191,7 +194,7 @@ onMounted(() => {
                     {{ entry[0] }}: {{ entry[1] }}
                   </a-tag>
                   <a-tag v-if="Object.keys(record.regions).length > 5" size="small">
-                    +{{ Object.keys(record.regions).length - 5 }} 更多
+                    +{{ Object.keys(record.regions).length - 5 }} >>
                   </a-tag>
                 </template>
                 <span v-else class="no-data">-</span>
@@ -226,7 +229,7 @@ onMounted(() => {
 
       <a-empty 
         v-if="!loading && sources.length === 0" 
-        description="暂无代理源数据，请先运行调度程序抓取代理" 
+        :description="t('sources.noData')" 
       />
     </a-spin>
   </div>

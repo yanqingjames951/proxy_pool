@@ -4,7 +4,8 @@
         "proxies": "代理列表",
         "sources": "代理源",
         "tools": "工具",
-        "admin": "管理"
+        "admin": "管理",
+        "docs": "开发文档"
     },
     "dashboard": {
         "title": "代理池控制台",
@@ -48,6 +49,8 @@
         "actions": "操作",
         "test": "测试",
         "delete": "删除",
+        "batchDelete": "批量删除",
+        "clearFilter": "清除筛选",
         "noData": "暂无数据"
     },
     "admin": {
@@ -62,7 +65,12 @@
         "alerts": "告警记录",
         "cleanup": "清理",
         "runCleanup": "执行清理",
-        "settings": "设置"
+        "settings": "设置",
+        "refresh": "刷新",
+        "lastUsed": "最后使用",
+        "usageCount": "使用次数",
+        "user": "普通用户",
+        "administrator": "管理员"
     },
     "auth": {
         "login": "登录",
@@ -71,7 +79,8 @@
         "enterApiKey": "请输入 API Key",
         "submit": "提交",
         "invalidKey": "无效的 API Key",
-        "loginSuccess": "登录成功"
+        "loginSuccess": "登录成功",
+        "contactAdmin": "请联系管理员获取 API Key"
     },
     "common": {
         "loading": "加载中...",
@@ -97,11 +106,76 @@
         "running": "运行中",
         "stopped": "已停止"
     },
-    "alerts": {
-        "proxyLow": "代理池数量不足",
-        "testSuccess": "代理测试成功",
-        "testFailed": "代理测试失败",
-        "deleteSuccess": "删除成功",
-        "copySuccess": "已复制到剪贴板"
+    "docs": {
+        "title": "开发文档 & 集成指南",
+        "baseInfo": "API 基础信息",
+        "examples": "调用示例",
+        "apiReference": "API 接口列表",
+        "api": {
+            "get": "获取单个代理",
+            "getBatch": "批量获取代理",
+            "pop": "获取并删除代理",
+            "count": "获取当前总数",
+            "health": "健康检查"
+        }
+    },
+    "sources": {
+        "activeSources": "活跃代理源",
+        "totalProxies": "总代理数",
+        "topSource": "最大来源",
+        "topSourceCount": "最大来源代理数",
+        "details": "代理源详情",
+        "name": "来源名称",
+        "total": "总数",
+        "regions": "地区分布",
+        "noData": "暂无代理源数据，请先运行调度程序抓取代理"
+    },
+    "tools": {
+        "proxyTester": "代理测试工具",
+        "systemConfig": "系统配置",
+        "apiDocs": "API 文档",
+        "getHttpProxy": "获取 HTTP 代理",
+        "getHttpsProxy": "获取 HTTPS 代理",
+        "test": "测试",
+        "enterProxy": "输入代理地址",
+        "testUrl": "测试目标 URL",
+        "testUrlLabel": "测试URL",
+        "currentProxy": "当前代理信息",
+        "status": "状态",
+        "success": "成功",
+        "failed": "失败",
+        "testSuccess": "测试成功",
+        "testFailed": "测试失败",
+        "latency": "延迟",
+        "statusCode": "状态码",
+        "errorMsg": "错误信息",
+        "response": "响应内容",
+        "enabledSources": "已启用的代理源",
+        "config": {
+            "serverHost": "服务器地址",
+            "httpUrl": "HTTP 验证 URL",
+            "httpsUrl": "HTTPS 验证 URL",
+            "timeout": "验证超时",
+            "maxFail": "最大失败次数",
+            "minPool": "最小代理池大小",
+            "region": "启用地区检测"
+        },
+        "table": {
+            "url": "URL",
+            "method": "方法",
+            "params": "参数",
+            "desc": "描述"
+        },
+        "apiDesc": {
+            "get": "随机获取一个代理",
+            "pop": "获取并删除一个代理",
+            "all": "获取所有代理",
+            "count": "获取代理统计信息",
+            "delete": "删除指定代理",
+            "list": "分页获取代理列表",
+            "test": "测试代理连通性",
+            "sources": "获取代理源统计",
+            "config": "获取系统配置"
+        }
     }
 }

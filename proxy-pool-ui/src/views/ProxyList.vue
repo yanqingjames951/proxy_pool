@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { message, Modal } from 'ant-design-vue'
+import { useI18n } from 'vue-i18n'
 import {
   SearchOutlined,
   ReloadOutlined,
@@ -13,6 +14,8 @@ import {
   ThunderboltOutlined,
   DownloadOutlined
 } from '@ant-design/icons-vue'
+
+const { t } = useI18n()
 
 interface Proxy {
   proxy: string
@@ -50,7 +53,7 @@ const filters = ref({
   source: ''
 })
 
-// Sorting - default by latency ascending (fastest first)
+// Sorting
 const sorter = ref({
   field: 'latency',
   order: 'asc'
@@ -64,15 +67,15 @@ const selectedRows = ref<Proxy[]>([])
 const testingProxy = ref<string | null>(null)
 const testResults = ref<Record<string, any>>({})
 
-const columns = [
+const columns = computed(() => [
   {
-    title: '代理地址',
+    title: t('proxies.proxy'),
     dataIndex: 'proxy',
     key: 'proxy',
     width: 180
   },
   {
-    title: '延迟',
+    title: t('proxies.latency'),
     dataIndex: 'latency',
     key: 'latency',
     width: 100,
@@ -80,53 +83,53 @@ const columns = [
     defaultSortOrder: 'ascend'
   },
   {
-    title: '协议',
+    title: t('proxies.protocol'),
     dataIndex: 'https',
     key: 'https',
     width: 80
   },
   {
-    title: '地区',
+    title: t('proxies.region'),
     dataIndex: 'region',
     key: 'region',
     width: 150,
     ellipsis: true
   },
   {
-    title: '来源',
+    title: t('proxies.source'),
     dataIndex: 'source',
     key: 'source',
     width: 150,
     ellipsis: true
   },
   {
-    title: '检测次数',
+    title: t('proxies.checkCount'),
     dataIndex: 'check_count',
     key: 'check_count',
     width: 100,
     sorter: true
   },
   {
-    title: '失败次数',
+    title: t('proxies.failCount') || 'Fail Count',
     dataIndex: 'fail_count',
     key: 'fail_count',
     width: 100,
     sorter: true
   },
   {
-    title: '最后检测',
+    title: t('proxies.lastCheck'),
     dataIndex: 'last_time',
     key: 'last_time',
     width: 180,
     sorter: true
   },
   {
-    title: '操作',
+    title: t('proxies.actions'),
     key: 'action',
     width: 200,
     fixed: 'right'
   }
-]
+])
 
 const fetchProxies = async () => {
   try {
@@ -147,7 +150,7 @@ const fetchProxies = async () => {
     pagination.value.total = res.data.total
   } catch (error) {
     console.error('Failed to fetch proxies', error)
-    message.error('获取代理列表失败')
+    message.error(t('common.error'))
   } finally {
     loading.value = false
   }
@@ -157,7 +160,6 @@ const handleTableChange = (pag: any, _filters: any, sort: any) => {
   pagination.value.current = pag.current
   pagination.value.pageSize = pag.pageSize
   
-  // Handle sorting
   if (sort.field) {
     sorter.value.field = sort.field
     sorter.value.order = sort.order === 'descend' ? 'desc' : 'asc'
@@ -181,16 +183,16 @@ const getLatencyLabel = (latency: number): string => {
 
 const copyProxy = (proxy: string) => {
   navigator.clipboard.writeText(proxy)
-  message.success('已复制到剪贴板')
+  message.success(t('common.copied'))
 }
 
 const deleteProxy = async (proxy: string) => {
   try {
     await axios.get(`/delete/?proxy=${encodeURIComponent(proxy)}`)
-    message.success('删除成功')
+    message.success(t('common.success'))
     fetchProxies()
   } catch (error) {
-    message.error('删除失败')
+    message.error(t('common.error'))
   }
 }
 
@@ -200,12 +202,12 @@ const testProxy = async (proxy: string) => {
     const res = await axios.get(`/api/test/?proxy=${encodeURIComponent(proxy)}`)
     testResults.value[proxy] = res.data
     if (res.data.success) {
-      message.success(`测试成功! 延迟: ${res.data.latency_ms}ms`)
+      message.success(`${t('proxies.test')} ${t('common.success')}! ${t('proxies.latency')}: ${res.data.latency_ms}ms`)
     } else {
-      message.warning(`测试失败: ${res.data.error}`)
+      message.warning(`${t('proxies.test')} ${t('common.error')}: ${res.data.error}`)
     }
   } catch (error) {
-    message.error('测试请求失败')
+    message.error(t('common.error'))
   } finally {
     testingProxy.value = null
   }
@@ -213,24 +215,24 @@ const testProxy = async (proxy: string) => {
 
 const batchDelete = async () => {
   if (selectedRowKeys.value.length === 0) {
-    message.warning('请先选择要删除的代理')
+    message.warning(t('proxies.noData')) 
     return
   }
   
   Modal.confirm({
-    title: '确认删除',
-    content: `确定要删除选中的 ${selectedRowKeys.value.length} 个代理吗？`,
-    okText: '确认',
-    cancelText: '取消',
+    title: t('common.confirm'),
+    content: `${t('proxies.delete')} ${selectedRowKeys.value.length}?`,
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
     onOk: async () => {
       try {
         await axios.post('/api/delete_batch/', { proxies: selectedRowKeys.value })
-        message.success('批量删除成功')
+        message.success(t('common.success'))
         selectedRowKeys.value = []
         selectedRows.value = []
         fetchProxies()
       } catch (error) {
-        message.error('批量删除失败')
+        message.error(t('common.error'))
       }
     }
   })
@@ -256,7 +258,7 @@ const exportProxies = (format: string) => {
   if (filters.value.region) params.append('region', filters.value.region)
   
   window.open(`/export/?${params}`, '_blank')
-  message.success(`正在导出 ${format.toUpperCase()} 格式`)
+  message.success(`${t('proxies.export')} ${format.toUpperCase()}`)
 }
 
 onMounted(() => {
@@ -272,12 +274,12 @@ onMounted(() => {
         <a-col :xs="24" :sm="12" :md="6" :lg="4">
           <a-select
             v-model:value="filters.https"
-            placeholder="协议类型"
+            :placeholder="t('proxies.protocol')"
             allowClear
             style="width: 100%"
             @change="() => { pagination.current = 1; fetchProxies() }"
           >
-            <a-select-option value="">全部</a-select-option>
+            <a-select-option value="">{{ t('proxies.all') }}</a-select-option>
             <a-select-option value="true">HTTPS</a-select-option>
             <a-select-option value="false">HTTP</a-select-option>
           </a-select>
@@ -285,7 +287,7 @@ onMounted(() => {
         <a-col :xs="24" :sm="12" :md="6" :lg="4">
           <a-input
             v-model:value="filters.region"
-            placeholder="搜索地区"
+            :placeholder="t('proxies.region')"
             allowClear
             @pressEnter="() => { pagination.current = 1; fetchProxies() }"
           >
@@ -295,7 +297,7 @@ onMounted(() => {
         <a-col :xs="24" :sm="12" :md="6" :lg="4">
           <a-input
             v-model:value="filters.source"
-            placeholder="搜索来源"
+            :placeholder="t('proxies.source')"
             allowClear
             @pressEnter="() => { pagination.current = 1; fetchProxies() }"
           >
@@ -305,13 +307,13 @@ onMounted(() => {
         <a-col :xs="24" :sm="12" :md="6" :lg="12">
           <a-space>
             <a-button type="primary" @click="() => { pagination.current = 1; fetchProxies() }">
-              <SearchOutlined /> 搜索
+              <SearchOutlined /> {{ t('proxies.search') }}
             </a-button>
             <a-button @click="clearFilters">
-              清除筛选
+              {{ t('proxies.clearFilter') }}
             </a-button>
             <a-button @click="fetchProxies">
-              <ReloadOutlined /> 刷新
+              <ReloadOutlined /> {{ t('dashboard.refresh') }}
             </a-button>
             <a-button 
               type="primary" 
@@ -319,22 +321,22 @@ onMounted(() => {
               @click="batchDelete"
               :disabled="selectedRowKeys.length === 0"
             >
-              <DeleteOutlined /> 批量删除 ({{ selectedRowKeys.length }})
+              <DeleteOutlined /> {{ t('proxies.batchDelete') }} ({{ selectedRowKeys.length }})
             </a-button>
             <a-dropdown>
               <a-button>
-                <DownloadOutlined /> 导出
+                <DownloadOutlined /> {{ t('proxies.export') }}
               </a-button>
               <template #overlay>
                 <a-menu>
                   <a-menu-item key="txt" @click="exportProxies('txt')">
-                    📄 TXT 格式 (仅 IP:Port)
+                    📄 {{ t('proxies.exportTxt') }}
                   </a-menu-item>
                   <a-menu-item key="json" @click="exportProxies('json')">
-                    📋 JSON 格式 (完整信息)
+                    📋 {{ t('proxies.exportJson') }}
                   </a-menu-item>
                   <a-menu-item key="csv" @click="exportProxies('csv')">
-                    📊 CSV 格式 (表格)
+                    📊 {{ t('proxies.exportCsv') }}
                   </a-menu-item>
                 </a-menu>
               </template>
@@ -356,12 +358,12 @@ onMounted(() => {
           total: pagination.total,
           showSizeChanger: true,
           showQuickJumper: true,
-          showTotal: (total: number) => `共 ${total} 条`
+          showTotal: (total: number) => `${t('common.total')} ${total}`
         }"
         :rowKey="(record: Proxy) => record.proxy"
         :rowSelection="{
-          selectedRowKeys,
-          onChange: onSelectChange
+            selectedRowKeys,
+            onChange: onSelectChange
         }"
         :scroll="{ x: 1400 }"
         @change="handleTableChange"
@@ -380,12 +382,12 @@ onMounted(() => {
           </template>
           <template v-else-if="column.key === 'action'">
             <a-space>
-              <a-tooltip title="复制">
+               <a-tooltip :title="t('common.copy')">
                 <a-button size="small" @click="copyProxy(record.proxy)">
                   <CopyOutlined />
                 </a-button>
               </a-tooltip>
-              <a-tooltip title="测试">
+              <a-tooltip :title="t('proxies.test')">
                 <a-button 
                   size="small" 
                   :loading="testingProxy === record.proxy"
@@ -394,7 +396,7 @@ onMounted(() => {
                   <ExperimentOutlined />
                 </a-button>
               </a-tooltip>
-              <a-tooltip title="删除">
+              <a-tooltip :title="t('common.delete')">
                 <a-button size="small" danger @click="deleteProxy(record.proxy)">
                   <DeleteOutlined />
                 </a-button>
@@ -404,7 +406,7 @@ onMounted(() => {
                   <CheckCircleOutlined /> {{ testResults[record.proxy].latency_ms }}ms
                 </a-tag>
                 <a-tag v-else color="error">
-                  <CloseCircleOutlined /> 失败
+                  <CloseCircleOutlined /> {{ t('common.error') }}
                 </a-tag>
               </template>
             </a-space>

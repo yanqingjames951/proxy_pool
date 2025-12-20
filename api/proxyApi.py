@@ -325,6 +325,7 @@ def delete():
 
 
 @app.route('/count/')
+@require_auth
 def getCount():
     proxies = proxy_handler.getAll()
     http_type_dict = {}
@@ -423,6 +424,7 @@ def deleteBatch():
 
 
 @app.route('/api/test/', methods=['GET', 'POST'])
+@require_auth
 def testProxy():
     """Test a proxy against a URL"""
     import requests as req
@@ -465,6 +467,7 @@ def testProxy():
 
 
 @app.route('/api/sources/')
+@require_auth
 def getSources():
     """Get statistics by source"""
     proxies = proxy_handler.getAll()
@@ -493,6 +496,7 @@ def getSources():
 
 
 @app.route('/api/config/')
+@require_auth
 def getConfig():
     """Get system configuration (read-only)"""
     return {
@@ -808,6 +812,13 @@ def startCleanupScheduler():
 
 
 def runFlask():
+    # 确保初始化 Admin Key
+    try:
+        key = auth_handler.init_admin_key()
+        print(f"Admin API Key: {key}")
+    except Exception as e:
+        print(f"Failed to init admin key: {e}")
+
     if platform.system() == "Windows":
         app.run(host=conf.serverHost, port=conf.serverPort)
     else:

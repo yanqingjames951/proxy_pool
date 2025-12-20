@@ -4,26 +4,27 @@
         "proxies": "Proxy List",
         "sources": "Sources",
         "tools": "Tools",
-        "admin": "Admin"
+        "admin": "Admin",
+        "docs": "Documentation"
     },
     "dashboard": {
-        "title": "Proxy Pool Dashboard",
+        "title": "Proxy Pool Console",
         "totalProxies": "Total Proxies",
         "httpProxies": "HTTP Proxies",
         "httpsProxies": "HTTPS Proxies",
-        "sourcesCount": "Sources Count",
+        "sourcesCount": "Source Count",
         "todayCalls": "Today Calls",
         "weekCalls": "Week Calls",
         "activeUsers": "Active Users",
         "protocolDistribution": "Protocol Distribution",
         "sourceTop10": "Top 10 Sources",
-        "apiTrend": "API Call Trend (7 days)",
+        "apiTrend": "API Trend (7 Days)",
         "regionTop8": "Top 8 Regions",
-        "topUsers": "Top Users by Calls",
+        "topUsers": "Top Users",
         "quickActions": "Quick Actions",
         "refresh": "Refresh",
-        "viewProxies": "View Proxy List",
-        "testTool": "Proxy Test Tool",
+        "viewProxies": "View Proxies",
+        "testTool": "Test Tool",
         "adminPanel": "Admin Panel",
         "lastUpdate": "Last Update"
     },
@@ -48,30 +49,38 @@
         "actions": "Actions",
         "test": "Test",
         "delete": "Delete",
+        "batchDelete": "Batch Delete",
+        "clearFilter": "Clear Filter",
         "noData": "No Data"
     },
     "admin": {
         "title": "Admin Panel",
         "apiKeys": "API Keys",
-        "createKey": "Create API Key",
+        "createKey": "Create Key",
         "name": "Name",
         "role": "Role",
         "createdAt": "Created At",
         "usageLogs": "Usage Logs",
-        "usageStats": "Usage Statistics",
+        "usageStats": "Usage Stats",
         "alerts": "Alerts",
         "cleanup": "Cleanup",
         "runCleanup": "Run Cleanup",
-        "settings": "Settings"
+        "settings": "Settings",
+        "refresh": "Refresh",
+        "lastUsed": "Last Used",
+        "usageCount": "Usage Count",
+        "user": "User",
+        "administrator": "Admin"
     },
     "auth": {
         "login": "Login",
         "logout": "Logout",
         "apiKey": "API Key",
-        "enterApiKey": "Enter your API Key",
+        "enterApiKey": "Enter API Key",
         "submit": "Submit",
         "invalidKey": "Invalid API Key",
-        "loginSuccess": "Login Successful"
+        "loginSuccess": "Login Success",
+        "contactAdmin": "Please contact admin for API Key"
     },
     "common": {
         "loading": "Loading...",
@@ -97,11 +106,76 @@
         "running": "Running",
         "stopped": "Stopped"
     },
-    "alerts": {
-        "proxyLow": "Proxy pool count is low",
-        "testSuccess": "Proxy test successful",
-        "testFailed": "Proxy test failed",
-        "deleteSuccess": "Delete successful",
-        "copySuccess": "Copied to clipboard"
+    "docs": {
+        "title": "Integration Guide",
+        "baseInfo": "API Base Info",
+        "examples": "Code Examples",
+        "apiReference": "API Reference",
+        "api": {
+            "get": "Get Single Proxy",
+            "getBatch": "Get Batch Proxies",
+            "pop": "Get & Delete Proxy",
+            "count": "Get Total Count",
+            "health": "Health Check"
+        }
+    },
+    "sources": {
+        "activeSources": "Active Sources",
+        "totalProxies": "Total Proxies",
+        "topSource": "Top Source",
+        "topSourceCount": "Top Source Count",
+        "details": "Source Details",
+        "name": "Name",
+        "total": "Total",
+        "regions": "Region Distribution",
+        "noData": "No data available. Please run scheduler first."
+    },
+    "tools": {
+        "proxyTester": "Proxy Tester",
+        "systemConfig": "System Config",
+        "apiDocs": "API Docs",
+        "getHttpProxy": "Get HTTP Proxy",
+        "getHttpsProxy": "Get HTTPS Proxy",
+        "test": "Test",
+        "enterProxy": "Enter Proxy Address",
+        "testUrl": "Test Target URL",
+        "testUrlLabel": "Test URL",
+        "currentProxy": "Current Proxy Info",
+        "status": "Status",
+        "success": "Success",
+        "failed": "Failed",
+        "testSuccess": "Test Success",
+        "testFailed": "Test Failed",
+        "latency": "Latency",
+        "statusCode": "Status Code",
+        "errorMsg": "Error Message",
+        "response": "Response Body",
+        "enabledSources": "Enabled Sources",
+        "config": {
+            "serverHost": "Server Host",
+            "httpUrl": "HTTP Verify URL",
+            "httpsUrl": "HTTPS Verify URL",
+            "timeout": "Verify Timeout",
+            "maxFail": "Max Fail Count",
+            "minPool": "Min Pool Size",
+            "region": "Region Check"
+        },
+        "table": {
+            "url": "URL",
+            "method": "Method",
+            "params": "Params",
+            "desc": "Description"
+        },
+        "apiDesc": {
+            "get": "Get random proxy",
+            "pop": "Get and delete proxy",
+            "all": "Get all proxies",
+            "count": "Get proxy count",
+            "delete": "Delete specific proxy",
+            "list": "Get proxy list (paginated)",
+            "test": "Test proxy connectivity",
+            "sources": "Get source stats",
+            "config": "Get system config"
+        }
     }
 }

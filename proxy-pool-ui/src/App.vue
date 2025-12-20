@@ -13,7 +13,8 @@ import {
   UserOutlined,
   BulbOutlined,
   BulbFilled,
-  GlobalOutlined
+  GlobalOutlined,
+  FileTextOutlined
 } from '@ant-design/icons-vue'
 import { message, theme } from 'ant-design-vue'
 import { setLocale, supportedLocales, getLocale } from './locales'
@@ -36,6 +37,7 @@ const menuItems = computed(() => [
   { key: 'proxies', icon: UnorderedListOutlined, label: t('nav.proxies'), path: '/proxies' },
   { key: 'sources', icon: CloudServerOutlined, label: t('nav.sources'), path: '/sources' },
   { key: 'tools', icon: ToolOutlined, label: t('nav.tools'), path: '/tools' },
+  { key: 'docs', icon: FileTextOutlined, label: t('nav.docs'), path: '/docs' },
   { key: 'admin', icon: SettingOutlined, label: t('nav.admin'), path: '/admin' },
 ])
 
@@ -45,7 +47,11 @@ const isLoginPage = computed(() => route.path === '/login')
 onMounted(() => {
   const storedUser = localStorage.getItem('user_info')
   if (storedUser) {
-    userInfo.value = JSON.parse(storedUser)
+    try {
+      userInfo.value = JSON.parse(storedUser)
+    } catch (e) {
+      console.error('Failed to parse user info')
+    }
   }
   
   // 读取保存的主题偏好
@@ -130,10 +136,10 @@ watch(isDarkMode, applyTheme)
       <a-layout>
         <a-layout-header class="header" :class="{ 'dark-header': isDarkMode }">
           <div class="header-content">
-            <h2>Proxy Pool Dashboard</h2>
+            <h2>{{ t('dashboard.title') }}</h2>
             <div class="header-right">
               <!-- 主题切换按钮 -->
-              <a-tooltip :title="isDarkMode ? '切换到浅色模式' : '切换到深色模式'">
+              <a-tooltip :title="isDarkMode ? 'Light Mode' : 'Dark Mode'">
                 <a-button 
                   type="text" 
                   @click="toggleTheme"
@@ -159,17 +165,17 @@ watch(isDarkMode, applyTheme)
                 </template>
               </a-dropdown>
               
-              <template v-if="userInfo">
+              <template v-if="userInfo || isLoggedIn">
                 <a-dropdown>
                   <a class="user-info" @click.prevent>
                     <UserOutlined />
-                    <span>{{ userInfo.name }}</span>
-                    <a-tag v-if="userInfo.role === 'admin'" color="red" size="small">Admin</a-tag>
+                    <span>{{ userInfo?.name || 'User' }}</span>
+                    <a-tag v-if="userInfo?.role === 'admin'" color="red" size="small">Admin</a-tag>
                   </a>
                   <template #overlay>
                     <a-menu>
                       <a-menu-item key="logout" @click="logout">
-                        <LogoutOutlined /> 退出登录
+                        <LogoutOutlined /> {{ t('auth.logout') }}
                       </a-menu-item>
                     </a-menu>
                   </template>
@@ -212,18 +218,24 @@ body {
   border-radius: 8px;
 }
 
-.header {
-  background: white;
+/* Force override Ant Design header background */
+.header.ant-layout-header {
+  background: white !important;
   padding: 0 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   position: sticky;
   top: 0;
   z-index: 100;
   transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  line-height: normal; /* Fix alignment */
+  height: 64px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.dark-header {
-  background: #1f1f1f;
+.dark-header.ant-layout-header {
+  background: #1f1f1f !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -236,6 +248,7 @@ body {
   justify-content: space-between;
   align-items: center;
   height: 100%;
+  width: 100%;
 }
 
 .header-content h2 {
@@ -311,6 +324,7 @@ body {
 .github-link:hover {
   color: #1890ff;
   background: rgba(24, 144, 255, 0.1);
+  background-color: rgba(24, 144, 255, 0.1); /* Explicit */
 }
 
 .lang-toggle {

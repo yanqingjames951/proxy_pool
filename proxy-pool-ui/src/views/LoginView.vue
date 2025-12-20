@@ -3,15 +3,24 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 import { message } from 'ant-design-vue'
-import { KeyOutlined, LoginOutlined } from '@ant-design/icons-vue'
+import { KeyOutlined, LoginOutlined, GlobalOutlined } from '@ant-design/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { setLocale, supportedLocales, getLocale } from '../locales'
 
 const router = useRouter()
 const apiKey = ref('')
 const loading = ref(false)
+const { t } = useI18n()
+const currentLocale = ref(getLocale())
+
+const switchLocale = (code: string) => {
+  setLocale(code)
+  currentLocale.value = code
+}
 
 const login = async () => {
   if (!apiKey.value.trim()) {
-    message.warning('请输入 API Key')
+    message.warning(t('auth.enterApiKey'))
     return
   }
   
@@ -29,16 +38,16 @@ const login = async () => {
       // 设置全局 axios 请求头
       axios.defaults.headers.common['X-API-Key'] = apiKey.value.trim()
       
-      message.success(`欢迎, ${res.data.user.name}!`)
+      message.success(t('auth.loginSuccess'))
       router.push('/')
     } else {
-      message.error(res.data.message || '登录失败')
+      message.error(res.data.message || t('common.error'))
     }
   } catch (error: any) {
     if (error.response?.status === 401) {
-      message.error('API Key 无效')
+      message.error(t('auth.invalidKey'))
     } else {
-      message.error('登录失败，请重试')
+      message.error(t('common.error'))
     }
   } finally {
     loading.value = false
@@ -55,16 +64,31 @@ const handleKeyPress = (e: KeyboardEvent) => {
 <template>
   <div class="login-container">
     <div class="login-card">
+      <div class="lang-switch">
+        <a-dropdown>
+          <a-button type="text">
+            <GlobalOutlined /> {{ (supportedLocales as any[]).find((l: any) => l.code === currentLocale)?.flag }}
+          </a-button>
+          <template #overlay>
+            <a-menu @click="(info: any) => switchLocale(info.key)">
+              <a-menu-item v-for="lang in supportedLocales" :key="lang.code">
+                {{ lang.flag }} {{ lang.name }}
+              </a-menu-item>
+            </a-menu>
+          </template>
+        </a-dropdown>
+      </div>
+
       <div class="logo">
         <span class="logo-icon">🌐</span>
         <h1>Proxy Pool</h1>
-        <p class="subtitle">代理池管理系统</p>
+        <p class="subtitle">{{ t('dashboard.title') }}</p>
       </div>
       
       <div class="login-form">
         <a-input-password
           v-model:value="apiKey"
-          placeholder="请输入 API Key"
+          :placeholder="t('auth.enterApiKey')"
           size="large"
           @keypress="handleKeyPress"
         >
@@ -83,17 +107,27 @@ const handleKeyPress = (e: KeyboardEvent) => {
           <template #icon>
             <LoginOutlined />
           </template>
-          登录
+          {{ t('auth.login') }}
         </a-button>
       </div>
       
       <div class="tips">
         <a-alert 
-          message="提示" 
-          description="请联系管理员获取 API Key" 
+          :message="t('common.confirm')"
+          :description="t('auth.enterApiKey')" 
           type="info" 
           show-icon 
-        />
+        >
+        <!-- 'description' is usually contact admin in original code ("请联系管理员...").
+             I don't have a key for "Contact Admin". I'll skip translating description if not critical or use "enterApiKey".
+             Original: "请联系管理员获取 API Key"
+             I'll hardcode "Contact Admin for API Key" if English? Or add key.
+             I'll add "contactAdmin": "请联系管理员获取 API Key" to `auth` in JSON. 
+        -->
+          <template #description>
+             {{ t('auth.contactAdmin') || 'Contact Admin for API Key' }}
+          </template>
+        </a-alert>
       </div>
     </div>
   </div>
@@ -116,6 +150,13 @@ const handleKeyPress = (e: KeyboardEvent) => {
   width: 100%;
   max-width: 420px;
   animation: slideUp 0.5s ease-out;
+  position: relative;
+}
+
+.lang-switch {
+  position: absolute;
+  top: 16px;
+  right: 16px;
 }
 
 @keyframes slideUp {

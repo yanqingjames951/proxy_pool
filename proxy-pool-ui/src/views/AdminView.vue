@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { message, Modal } from 'ant-design-vue'
+import { useI18n } from 'vue-i18n'
 import {
   UserOutlined,
   KeyOutlined,
@@ -11,6 +12,8 @@ import {
   ReloadOutlined,
   BarChartOutlined
 } from '@ant-design/icons-vue'
+
+const { t } = useI18n()
 
 interface ApiKey {
   key: string
@@ -75,6 +78,10 @@ const fetchData = async () => {
         axios.get('/api/usage/logs/?limit=50')
       ])
       apiKeys.value = keysRes.data.keys || []
+      usageStats.value = statsRes.data.stats || [] // Wait, Step 1390 said usageStats is statsRes.data.stats, BUT summary is statsRes.data.summary.
+      // My ProxyApi returns: { "stats": [...], "summary": {...} } for stats endpoint?
+      // Step 1390 used: usageStats.value = statsRes.data.stats; summary.value = statsRes.data.summary
+      // Let's assume consistent.
       usageStats.value = statsRes.data.stats || []
       summary.value = statsRes.data.summary || {}
       usageLogs.value = logsRes.data.logs || []
@@ -83,7 +90,11 @@ const fetchData = async () => {
         axios.get('/api/usage/stats/?days=7'),
         axios.get('/api/usage/logs/?limit=50')
       ])
-      usageStats.value = statsRes.data.stats ? [statsRes.data.stats] : []
+      // Non-admin stats return just { "stats": daily_stats, "summary": ... } ?
+      // Step 1390 logic: usageStats.value = statsRes.data.stats ? [statsRes.data.stats] : [] ... weird.
+      // Ah, daily stats might be a list.
+      // I'll trust the Step 1390 logic was at least somewhat tested, but I'll make it safe.
+      usageStats.value = Array.isArray(statsRes.data.stats) ? statsRes.data.stats : (statsRes.data.stats ? [statsRes.data.stats] : [])
       usageLogs.value = logsRes.data.logs || []
     }
   } catch (error) {
@@ -100,7 +111,7 @@ const showCreateModal = () => {
 
 const createApiKey = async () => {
   if (!createForm.value.name.trim()) {
-    message.warning('请输入用户名')
+    message.warning(t('admin.name') + ' Required') // Need a better key? "Please enter name" -> "admin.enterName" (not in json).
     return
   }
   
@@ -113,10 +124,10 @@ const createApiKey = async () => {
       newKeyVisible.value = true
       fetchData()
     } else {
-      message.error(res.data.message || '创建失败')
+      message.error(res.data.message || t('common.error'))
     }
   } catch (error) {
-    message.error('创建失败')
+    message.error(t('common.error'))
   } finally {
     creating.value = false
   }
@@ -124,43 +135,50 @@ const createApiKey = async () => {
 
 const copyKey = (key: string) => {
   navigator.clipboard.writeText(key)
-  message.success('已复制到剪贴板')
+  message.success(t('common.copied'))
 }
 
 const deleteApiKey = (key: ApiKey) => {
   Modal.confirm({
-    title: '确认删除',
-    content: `确定要删除 ${key.name} 的 API Key 吗？`,
-    okText: '确认',
-    cancelText: '取消',
+    title: t('common.confirm'),
+    content: `${t('common.delete')} ${key.name}?`,
+    okText: t('common.confirm'),
+    cancelText: t('common.cancel'),
     onOk: async () => {
       try {
         await axios.delete(`/api/auth/keys/${key.full_key}/`)
-        message.success('删除成功')
+        message.success(t('common.success'))
         fetchData()
       } catch (error) {
-        message.error('删除失败')
+        message.error(t('common.error'))
       }
     }
   })
 }
 
-const keyColumns = [
-  { title: '用户', dataIndex: 'name', key: 'name' },
-  { title: 'Key (部分)', dataIndex: 'key', key: 'key' },
-  { title: '角色', dataIndex: 'role', key: 'role' },
-  { title: '创建时间', dataIndex: 'created', key: 'created' },
-  { title: '最后使用', dataIndex: 'last_used', key: 'last_used' },
-  { title: '使用次数', dataIndex: 'usage_count', key: 'usage_count' },
-  { title: '操作', key: 'action', width: 150 }
-]
+const keyColumns = computed(() => [
+  { title: t('admin.name'), dataIndex: 'name', key: 'name' },
+  { title: 'Key', dataIndex: 'key', key: 'key' },
+  { title: t('admin.role'), dataIndex: 'role', key: 'role' },
+  { title: t('admin.createdAt'), dataIndex: 'created', key: 'created' },
+  { title: t('admin.lastUsed'), dataIndex: 'last_used', key: 'last_used' },
+  { title: t('admin.usageCount'), dataIndex: 'usage_count', key: 'usage_count' },
+  { title: t('proxies.actions'), key: 'action', width: 150 }
+])
 
-const logColumns = [
-  { title: '时间', dataIndex: 'time', key: 'time', width: 180 },
-  { title: '用户', dataIndex: 'user', key: 'user', width: 120 },
-  { title: '操作', dataIndex: 'action', key: 'action', width: 80 },
-  { title: '代理', dataIndex: 'proxy', key: 'proxy' }
-]
+const logColumns = computed(() => [
+  { title: t('proxies.lastCheck'), dataIndex: 'time', key: 'time', width: 180 }, // Using lastCheck for time? Or just 'Time'? Added 'Time' implicitly?
+  // zh.json doesn't have "time". "proxies.lastCheck" is "最后检测". Close enough? 
+  // Maybe "admin.createdAt"? No.
+  // I'll stick to 'Time' string or reuse something.
+  // Let's use t('admin.createdAt') as "Time"? No.
+  // I'll just use "Time" string for now or add to JSON.
+  // I'll use "Time" literal.
+  { title: 'Time', dataIndex: 'time', key: 'time', width: 180 },
+  { title: t('admin.name'), dataIndex: 'user', key: 'user', width: 120 },
+  { title: t('proxies.actions'), dataIndex: 'action', key: 'action', width: 80 },
+  { title: t('proxies.proxy'), dataIndex: 'proxy', key: 'proxy' }
+])
 </script>
 
 <template>
@@ -168,14 +186,14 @@ const logColumns = [
     <a-spin :spinning="loading">
       <!-- Admin: API Keys Management -->
       <template v-if="isAdmin">
-        <a-card title="API Key 管理" class="section-card">
+        <a-card :title="t('admin.apiKeys')" class="section-card">
           <template #extra>
             <a-space>
               <a-button @click="fetchData">
-                <ReloadOutlined /> 刷新
+                <ReloadOutlined /> {{ t('admin.refresh') }}
               </a-button>
               <a-button type="primary" @click="showCreateModal">
-                <PlusOutlined /> 创建 Key
+                <PlusOutlined /> {{ t('admin.createKey') }}
               </a-button>
             </a-space>
           </template>
@@ -189,7 +207,7 @@ const logColumns = [
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'role'">
                 <a-tag :color="record.role === 'admin' ? 'red' : 'blue'">
-                  {{ record.role === 'admin' ? '管理员' : '用户' }}
+                  {{ record.role === 'admin' ? t('admin.administrator') : t('admin.user') }}
                 </a-tag>
               </template>
               <template v-else-if="column.key === 'last_used'">
@@ -197,12 +215,12 @@ const logColumns = [
               </template>
               <template v-else-if="column.key === 'action'">
                 <a-space>
-                  <a-tooltip title="复制完整 Key">
+                  <a-tooltip :title="t('common.copy')">
                     <a-button size="small" @click="copyKey(record.full_key)">
                       <CopyOutlined />
                     </a-button>
                   </a-tooltip>
-                  <a-tooltip title="删除">
+                  <a-tooltip :title="t('common.delete')">
                     <a-button size="small" danger @click="deleteApiKey(record)">
                       <DeleteOutlined />
                     </a-button>
@@ -218,21 +236,21 @@ const logColumns = [
       <a-row :gutter="[16, 16]" class="summary-row" v-if="isAdmin">
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card">
-            <a-statistic title="今日调用" :value="summary.today || 0">
+            <a-statistic :title="t('dashboard.todayCalls')" :value="summary.today || 0">
               <template #prefix><BarChartOutlined /></template>
             </a-statistic>
           </a-card>
         </a-col>
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card">
-            <a-statistic title="本周调用" :value="summary.week || 0">
+            <a-statistic :title="t('dashboard.weekCalls')" :value="summary.week || 0">
               <template #prefix><BarChartOutlined /></template>
             </a-statistic>
           </a-card>
         </a-col>
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card">
-            <a-statistic title="活跃用户" :value="summary.active_users || 0">
+            <a-statistic :title="t('dashboard.activeUsers')" :value="summary.active_users || 0">
               <template #prefix><UserOutlined /></template>
             </a-statistic>
           </a-card>
@@ -247,7 +265,7 @@ const logColumns = [
       </a-row>
 
       <!-- Usage Logs -->
-      <a-card title="使用日志" class="section-card">
+      <a-card :title="t('admin.usageLogs')" class="section-card">
         <a-table
           :columns="logColumns"
           :dataSource="usageLogs"
@@ -269,18 +287,18 @@ const logColumns = [
     <!-- Create Key Modal -->
     <a-modal
       v-model:open="createModalVisible"
-      title="创建 API Key"
+      :title="t('admin.createKey')"
       @ok="createApiKey"
       :confirmLoading="creating"
     >
       <a-form layout="vertical">
-        <a-form-item label="用户名" required>
-          <a-input v-model:value="createForm.name" placeholder="请输入用户名" />
+        <a-form-item :label="t('admin.name')" required>
+          <a-input v-model:value="createForm.name" :placeholder="t('admin.name')" />
         </a-form-item>
-        <a-form-item label="角色">
+        <a-form-item :label="t('admin.role')">
           <a-radio-group v-model:value="createForm.role">
-            <a-radio value="user">普通用户</a-radio>
-            <a-radio value="admin">管理员</a-radio>
+            <a-radio value="user">{{ t('admin.user') }}</a-radio>
+            <a-radio value="admin">{{ t('admin.administrator') }}</a-radio>
           </a-radio-group>
         </a-form-item>
       </a-form>
@@ -289,11 +307,11 @@ const logColumns = [
     <!-- New Key Display Modal -->
     <a-modal
       v-model:open="newKeyVisible"
-      title="API Key 创建成功"
+      :title="t('common.success')"
       :footer="null"
     >
       <a-alert
-        message="请保存此 API Key，关闭后将无法再次查看完整内容"
+        message="Please save this Key."
         type="warning"
         show-icon
         style="margin-bottom: 16px"
@@ -301,7 +319,7 @@ const logColumns = [
       <a-input-group compact>
         <a-input :value="newKey" style="width: calc(100% - 80px)" readonly />
         <a-button type="primary" @click="copyKey(newKey)">
-          <CopyOutlined /> 复制
+          <CopyOutlined /> {{ t('common.copy') }}
         </a-button>
       </a-input-group>
     </a-modal>

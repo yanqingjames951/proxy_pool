@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { Doughnut, Bar, Line } from 'vue-chartjs'
+import { useI18n } from 'vue-i18n'
 import {
   Chart as ChartJS,
   ArcElement,
@@ -16,6 +17,8 @@ import {
 } from 'chart.js'
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Filler)
+
+const { t } = useI18n()
 
 interface Stats {
   count: number
@@ -73,8 +76,8 @@ const fetchUsageStats = async () => {
     if (summaryRes.data.stats) {
       usageSummary.value = summaryRes.data.stats
     }
-    if (statsRes.data.daily) {
-      dailyStats.value = statsRes.data.daily
+    if (statsRes.data.stats) {
+      dailyStats.value = statsRes.data.stats || [] 
     }
   } catch (error) {
     console.error('Failed to fetch usage stats', error)
@@ -83,11 +86,11 @@ const fetchUsageStats = async () => {
 
 // Protocol chart data
 const protocolChartData = computed(() => ({
-  labels: Object.keys(stats.value.http_type),
+  labels: Object.keys(stats.value.http_type).map(k => k.toUpperCase()),
   datasets: [{
     data: Object.values(stats.value.http_type),
-    backgroundColor: ['#1890ff', '#52c41a'],
-    hoverBackgroundColor: ['#40a9ff', '#73d13d']
+    backgroundColor: ['#1890ff', '#52c41a', '#fa8c16'],
+    hoverBackgroundColor: ['#40a9ff', '#73d13d', '#ffc069']
   }]
 }))
 
@@ -100,7 +103,7 @@ const sourceChartData = computed(() => {
   return {
     labels: sortedSources.map(([name]) => name),
     datasets: [{
-      label: '代理数量',
+      label: t('dashboard.sourcesCount'),
       data: sortedSources.map(([, count]) => count),
       backgroundColor: '#1890ff',
       borderRadius: 4
@@ -117,7 +120,7 @@ const regionChartData = computed(() => {
   return {
     labels: sortedRegions.map(([name]) => name),
     datasets: [{
-      label: '代理数量',
+      label: t('dashboard.regionTop8'),
       data: sortedRegions.map(([, count]) => count),
       backgroundColor: '#722ed1',
       borderRadius: 4
@@ -129,23 +132,17 @@ const regionChartData = computed(() => {
 const usageTrendData = computed(() => {
   if (!dailyStats.value || dailyStats.value.length === 0) {
     return {
-      labels: ['暂无数据'],
-      datasets: [{
-        label: 'API 调用次数',
-        data: [0],
-        borderColor: '#1890ff',
-        backgroundColor: 'rgba(24, 144, 255, 0.1)',
-        fill: true,
-        tension: 0.4
-      }]
+      labels: [t('common.noData')],
+      datasets: []
     }
   }
   
-  const reversed = [...dailyStats.value].reverse()
+  const reversed = [...dailyStats.value].reverse() 
+  
   return {
-    labels: reversed.map(d => d.date.slice(5)), // MM-DD format
+    labels: reversed.map(d => d.date.slice(5)), 
     datasets: [{
-      label: 'API 调用次数',
+      label: t('dashboard.todayCalls'), 
       data: reversed.map(d => d.total),
       borderColor: '#1890ff',
       backgroundColor: 'rgba(24, 144, 255, 0.1)',
@@ -200,7 +197,6 @@ const lineChartOptions = {
 onMounted(() => {
   fetchStats()
   fetchUsageStats()
-  // Auto refresh every 30 seconds
   setInterval(fetchStats, 30000)
 })
 </script>
@@ -212,7 +208,7 @@ onMounted(() => {
       <a-row :gutter="[16, 16]" class="stats-row">
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card total">
-            <a-statistic title="总代理数" :value="stats.count">
+            <a-statistic :title="t('dashboard.totalProxies')" :value="stats.count">
               <template #prefix>
                 <span class="stat-icon">🌐</span>
               </template>
@@ -221,7 +217,7 @@ onMounted(() => {
         </a-col>
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card http">
-            <a-statistic title="HTTP 代理" :value="stats.http_type.http || 0">
+            <a-statistic :title="t('dashboard.httpProxies')" :value="stats.http_type.http || 0">
               <template #prefix>
                 <span class="stat-icon">🔓</span>
               </template>
@@ -230,7 +226,7 @@ onMounted(() => {
         </a-col>
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card https">
-            <a-statistic title="HTTPS 代理" :value="stats.http_type.https || 0">
+            <a-statistic :title="t('dashboard.httpsProxies')" :value="stats.http_type.https || 0">
               <template #prefix>
                 <span class="stat-icon">🔒</span>
               </template>
@@ -239,7 +235,7 @@ onMounted(() => {
         </a-col>
         <a-col :xs="24" :sm="12" :lg="6">
           <a-card class="stat-card sources">
-            <a-statistic title="代理源数量" :value="Object.keys(stats.source).length">
+            <a-statistic :title="t('dashboard.sourcesCount')" :value="Object.keys(stats.source).length">
               <template #prefix>
                 <span class="stat-icon">📡</span>
               </template>
@@ -252,17 +248,17 @@ onMounted(() => {
       <a-row :gutter="[16, 16]" class="stats-row" v-if="usageSummary">
         <a-col :xs="24" :sm="8">
           <a-card class="stat-card usage">
-            <a-statistic title="今日调用" :value="usageSummary.today" prefix="📊" />
+            <a-statistic :title="t('dashboard.todayCalls')" :value="usageSummary.today" prefix="📊" />
           </a-card>
         </a-col>
         <a-col :xs="24" :sm="8">
           <a-card class="stat-card usage">
-            <a-statistic title="本周调用" :value="usageSummary.week" prefix="📈" />
+            <a-statistic :title="t('dashboard.weekCalls')" :value="usageSummary.week" prefix="📈" />
           </a-card>
         </a-col>
         <a-col :xs="24" :sm="8">
           <a-card class="stat-card usage">
-            <a-statistic title="活跃用户" :value="usageSummary.active_users" prefix="👥" />
+            <a-statistic :title="t('dashboard.activeUsers')" :value="usageSummary.active_users" prefix="👥" />
           </a-card>
         </a-col>
       </a-row>
@@ -270,23 +266,23 @@ onMounted(() => {
       <!-- Charts Row -->
       <a-row :gutter="[16, 16]" class="charts-row">
         <a-col :xs="24" :lg="8">
-          <a-card title="协议分布" class="chart-card">
+          <a-card :title="t('dashboard.protocolDistribution')" class="chart-card">
             <div class="chart-container" v-if="stats.count > 0">
               <Doughnut :data="protocolChartData" :options="chartOptions" />
             </div>
-            <a-empty v-else description="暂无数据" />
+            <a-empty v-else :description="t('common.noData')" />
           </a-card>
         </a-col>
         <a-col :xs="24" :lg="8">
-          <a-card title="代理源 Top 10" class="chart-card">
+          <a-card :title="t('dashboard.sourceTop10')" class="chart-card">
             <div class="chart-container" v-if="Object.keys(stats.source).length > 0">
               <Bar :data="sourceChartData" :options="barChartOptions" />
             </div>
-            <a-empty v-else description="暂无数据" />
+            <a-empty v-else :description="t('common.noData')" />
           </a-card>
         </a-col>
         <a-col :xs="24" :lg="8">
-          <a-card title="API 调用趋势 (7天)" class="chart-card">
+          <a-card :title="t('dashboard.apiTrend')" class="chart-card">
             <div class="chart-container">
               <Line :data="usageTrendData" :options="lineChartOptions" />
             </div>
@@ -297,15 +293,15 @@ onMounted(() => {
       <!-- Second Charts Row -->
       <a-row :gutter="[16, 16]" class="charts-row">
         <a-col :xs="24" :lg="12">
-          <a-card title="地区分布 Top 8" class="chart-card">
+          <a-card :title="t('dashboard.regionTop8')" class="chart-card">
             <div class="chart-container" v-if="Object.keys(stats.region).length > 0">
               <Bar :data="regionChartData" :options="barChartOptions" />
             </div>
-            <a-empty v-else description="暂无地区数据" />
+            <a-empty v-else :description="t('common.noData')" />
           </a-card>
         </a-col>
         <a-col :xs="24" :lg="12">
-          <a-card title="Top 用户调用量" class="chart-card" v-if="usageSummary && usageSummary.top_users.length > 0">
+          <a-card :title="t('dashboard.topUsers')" class="chart-card" v-if="usageSummary && usageSummary.top_users.length > 0">
             <a-list :dataSource="usageSummary.top_users" size="small">
               <template #renderItem="{ item, index }">
                 <a-list-item>
@@ -316,14 +312,14 @@ onMounted(() => {
                       </a-avatar>
                     </template>
                     <template #title>{{ item[0] }}</template>
-                    <template #description>{{ item[1] }} 次调用</template>
+                    <template #description>{{ item[1] }} {{ t('dashboard.todayCalls') }}</template>
                   </a-list-item-meta>
                 </a-list-item>
               </template>
             </a-list>
           </a-card>
-          <a-card title="Top 用户调用量" class="chart-card" v-else>
-            <a-empty description="暂无使用数据" />
+          <a-card :title="t('dashboard.topUsers')" class="chart-card" v-else>
+            <a-empty :description="t('common.noData')" />
           </a-card>
         </a-col>
       </a-row>
@@ -331,30 +327,30 @@ onMounted(() => {
       <!-- Quick Actions -->
       <a-row :gutter="[16, 16]" class="actions-row">
         <a-col :span="24">
-          <a-card title="快捷操作">
+          <a-card :title="t('dashboard.quickActions')">
             <a-space>
               <a-button type="primary" @click="fetchStats">
-                🔄 刷新数据
+                🔄 {{ t('dashboard.refresh') }}
               </a-button>
               <router-link to="/proxies">
                 <a-button type="default">
-                  📋 查看代理列表
+                  📋 {{ t('dashboard.viewProxies') }}
                 </a-button>
               </router-link>
               <router-link to="/tools">
                 <a-button type="default">
-                  🧪 代理测试工具
+                  🧪 {{ t('dashboard.testTool') }}
                 </a-button>
               </router-link>
               <router-link to="/admin">
                 <a-button type="default">
-                  ⚙️ 管理面板
+                  ⚙️ {{ t('dashboard.adminPanel') }}
                 </a-button>
               </router-link>
             </a-space>
             <div class="last-update" v-if="lastUpdate">
-              最后更新: {{ lastUpdate.toLocaleTimeString() }}
-            </div>
+              {{ t('dashboard.lastUpdate') }}: {{ lastUpdate.toLocaleTimeString() }}
+             </div>
           </a-card>
         </a-col>
       </a-row>
@@ -372,12 +368,13 @@ onMounted(() => {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.stats-row {
-  margin-bottom: 16px;
+.stats-row, .charts-row, .actions-row {
+  margin-bottom: 24px;
 }
 
 .stat-card {
   border-radius: 12px;
+  overflow: hidden;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -386,52 +383,25 @@ onMounted(() => {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 
-.stat-card.total {
-  border-left: 4px solid #1890ff;
-}
-
-.stat-card.http {
-  border-left: 4px solid #52c41a;
-}
-
-.stat-card.https {
-  border-left: 4px solid #faad14;
-}
-
-.stat-card.sources {
-  border-left: 4px solid #722ed1;
-}
-
-.stat-card.usage {
-  border-left: 4px solid #13c2c2;
-}
-
-.stat-icon {
-  font-size: 20px;
-  margin-right: 8px;
-}
-
-.charts-row {
-  margin-bottom: 16px;
-}
-
 .chart-card {
   border-radius: 12px;
   height: 100%;
 }
 
 .chart-container {
-  height: 250px;
-  padding: 10px;
+  height: 250px; /* Reduced specific height for responsiveness */
+  position: relative;
 }
 
-.actions-row .ant-card {
-  border-radius: 12px;
+.stat-icon {
+  font-size: 24px;
+  margin-right: 12px;
 }
 
 .last-update {
   margin-top: 16px;
-  color: #999;
+  color: #8c8c8c;
   font-size: 12px;
+  text-align: right;
 }
 </style>

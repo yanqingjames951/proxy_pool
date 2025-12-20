@@ -3,3 +3,11 @@ docs/_build
 *.pyc
 *.log
 凭证.txt
+*.tar.gz
+.DS_Store
+**/.DS_Store
+**/node_modules/
+**/dist/
+.vscode/
+venv/
+__pycache__/
