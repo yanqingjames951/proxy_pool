@@ -2,8 +2,10 @@ services:
   proxy_pool:
     build: .
     container_name: proxy_pool
-    ports:
-      - "5010:5010"
+    # ports:
+    #   - "5010:5010"  # Exposed via Nginx
+    expose:
+      - "5010"
     depends_on:
       - proxy_redis
     environment:
@@ -20,10 +22,24 @@ services:
   proxy_ui:
     build: ./proxy-pool-ui
     container_name: proxy_ui
-    ports:
-      - "5011:80"
+    # ports:
+    #   - "5011:80"  # Exposed via Nginx
+    expose:
+      - "80"
     depends_on:
       - proxy_pool
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: proxy_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - proxy_pool
+      - proxy_ui
     restart: unless-stopped
 
 volumes:
