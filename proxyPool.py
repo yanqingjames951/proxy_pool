@@ -1,16 +1,13 @@
-# -*- coding: utf-8 -*-
 """
 -------------------------------------------------
    File Name：     proxy_pool
    Description :   proxy pool 启动入口
-   Author :        JHao
-   date：          2020/6/19
--------------------------------------------------
-   Change Activity:
-                   2020/6/19:
+   Author :        ProxyPool Team
+   Original :      JHao (https://github.com/jhao104/proxy_pool)
+   date：          2024/12/20
 -------------------------------------------------
 """
-__author__ = 'JHao'
+__author__ = 'ProxyPool Team'
 
 import click
 from helper.launcher import startServer, startScheduler

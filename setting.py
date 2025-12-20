@@ -1,13 +1,10 @@
-# -*- coding: utf-8 -*-
 """
 -------------------------------------------------
    File Name：     setting.py
    Description :   配置文件
-   Author :        JHao
-   date：          2019/2/15
--------------------------------------------------
-   Change Activity:
-                   2019/2/15:
+   Author :        ProxyPool Team
+   Original :      JHao (https://github.com/jhao104/proxy_pool)
+   date：          2024/12/20
 -------------------------------------------------
 """
 
