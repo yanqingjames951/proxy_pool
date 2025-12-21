@@ -10,12 +10,7 @@ A high-performance Proxy Pool with a modern Vue 3 Dashboard and robust Python ba
 - **Docker Ready**: One-command deployment with Docker Compose.
 - **Developer Friendly**: Comprehensive API documentation and integration examples.
 
-## 🚀 Live Demo
-
-**Dashboard**: [http://proxy_pool.feiwindevelopment.com](http://proxy_pool.feiwindevelopment.com)  
-**Documentation**: [http://proxy_pool.feiwindevelopment.com/docs](http://proxy_pool.feiwindevelopment.com/docs)
-
-## 🛠 Deployment
+##  Deployment
 
 ```bash
 # Start services
