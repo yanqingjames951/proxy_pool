@@ -194,6 +194,9 @@ const lineChartOptions = {
   }
 }
 
+// Safe accessor for top_users
+const topUsers = computed(() => usageSummary.value?.top_users || [])
+
 onMounted(() => {
   fetchStats()
   fetchUsageStats()
@@ -301,8 +304,8 @@ onMounted(() => {
           </a-card>
         </a-col>
         <a-col :xs="24" :lg="12">
-          <a-card :title="t('dashboard.topUsers')" class="chart-card" v-if="usageSummary && usageSummary.top_users.length > 0">
-            <a-list :dataSource="usageSummary.top_users" size="small">
+          <a-card :title="t('dashboard.topUsers')" class="chart-card" v-if="topUsers.length > 0">
+            <a-list :dataSource="topUsers" size="small">
               <template #renderItem="{ item, index }">
                 <a-list-item>
                   <a-list-item-meta>
